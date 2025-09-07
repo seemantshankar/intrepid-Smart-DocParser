@@ -25,6 +25,11 @@ type Client interface {
 	ExecuteRequest(ctx context.Context, req *Request) (*Response, error)
 }
 
+// CircuitBreaker defines the interface for circuit breaker
+type CircuitBreaker interface {
+	Execute(func() (interface{}, error)) (interface{}, error)
+}
+
 // Request represents a service request
 type Request struct {
 	Method      string
@@ -43,7 +48,7 @@ type Response struct {
 // HTTPClient implements Client with resilience patterns
 type HTTPClient struct {
 	BaseURL  string
-	CB       *gobreaker.CircuitBreaker
+	CB       CircuitBreaker
 	RetryCfg RetryConfig
 	Timeout  time.Duration
 }
