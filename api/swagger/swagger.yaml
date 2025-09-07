@@ -1,0 +1,58 @@
+definitions:
+  handlers.HealthResponse:
+    properties:
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+    type: object
+  handlers.ReadinessResponse:
+    properties:
+      database:
+        example: ok
+        type: string
+      status:
+        example: ready
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the health status of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Health check endpoint
+      tags:
+      - health
+  /ready:
+    get:
+      consumes:
+      - application/json
+      description: Checks if the service is ready to handle requests by verifying
+        database connectivity
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Readiness check endpoint
+      tags:
+      - health
+swagger: "2.0"

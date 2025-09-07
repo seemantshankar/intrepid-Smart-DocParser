@@ -1,0 +1,53 @@
+server:
+  port: "9091"
+  env: "development"
+  read_timeout: 30s
+  write_timeout: 30s
+
+database:
+  dialect: "sqlite3"
+  name: "./local.db"
+  log_mode: true
+
+logging:
+  level: "debug"
+  format: "json"
+  output: "stdout"
+
+cors:
+  allowed_origins:
+    - "*"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "PATCH"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Accept"
+    - "Authorization"
+  allow_credentials: true
+  max_age: 12h
+
+llm:
+  openrouter:
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "${OPENROUTER_API_KEY}"
+    timeout: 60s
+    retry_count: 3
+    retry_wait_time: 5s
+    retry_max_interval: 30s
+
+ocr:
+  api_key: "${OPENROUTER_API_KEY}"
+  fallback_models:
+    - "google/gemini-pro-vision"
+    - "anthropic/claude-3-haiku"
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0

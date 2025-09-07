@@ -1,0 +1,29 @@
+server:
+  port: "8080"
+
+database:
+  host: localhost
+  port: 5432
+  user: testuser
+  password: testpassword
+  name: testdb
+  ssl_mode: disable
+
+llm:
+  openrouter:
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "${OPENROUTER_API_KEY_TEST}"
+    timeout: 60s
+    retry_count: 2
+    retry_wait_time: 2s
+    retry_max_interval: 10s
+
+ocr:
+  api_key: "${OPENROUTER_API_KEY_TEST}"
+  fallback_models:
+    - "google/gemini-pro-1.5"
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 1
