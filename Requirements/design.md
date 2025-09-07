@@ -1,197 +1,589 @@
-# Requirements Document
+# Software Design Document: Contract Analysis and Milestone Extraction Microservice
 
-## Introduction
+## 1. Introduction
 
-The Contract Analysis and Milestone Extraction system is a standalone microservice built with strict coding best practices that automatically analyzes uploaded contracts between buyers and sellers to extract contractual obligations that trigger money transfers. The system leverages external LLMs (like OpenAI GPT-4o) to identify, categorize, and sequence payment milestones while providing risk analysis and vulnerability assessments. This microservice exposes REST APIs for the main Smart Payment Infrastructure to consume, enabling intelligent milestone-based Smart Cheque creation through well-defined service contracts.
+### 1.1 Purpose
 
-## Requirements
+This document outlines the detailed software design for the Contract Analysis
+and Milestone Extraction microservice.
 
-### Requirement 1
+It is a standalone Go-based system that automates the analysis of
+buyer-seller contracts to extract payment milestones.
 
-**User Story:** As a business user, I want to upload contract documents in various formats with automatic validation, so that the system can analyze contractual obligations without manual data entry or processing incorrect documents.
+The system performs risk assessments, ensures compliance, and generates
+Smart Cheque configurations.
 
-#### Acceptance Criteria
+The design adheres to the requirements in `requirements.md`.
 
-1. WHEN a user uploads a document THEN the system SHALL accept PDF, DOCX, TXT, JPG, PNG, and TIFF file formats
-2. WHEN a document is uploaded THEN the system SHALL validate file size limits (max 10MB) and format compatibility
-3. WHEN image files are uploaded THEN the system SHALL apply OCR processing to extract text content
-4. WHEN scanned PDFs are uploaded THEN the system SHALL detect if OCR is needed and apply text extraction
-5. WHEN text extraction is complete THEN the system SHALL use LLM analysis to determine if the document is a valid contract
-6. WHEN contract validation runs THEN the system SHALL identify key contract elements (parties, obligations, terms, signatures/execution clauses)
-7. IF the document is not a contract THEN the system SHALL notify the user with specific reasons and suggest uploading a proper contract document
-8. WHEN text extraction is complete THEN the system SHALL store the original document and extracted text securely with confidence scores
-9. IF document upload fails THEN the system SHALL provide clear error messages and retry options
+It emphasizes clean architecture principles (SOLID, dependency inversion),
+modularity, 95%+ test coverage.
 
-### Requirement 2
+It includes resilience patterns (retries, circuit breakers), and
+production-ready features like JWT auth.
 
-**User Story:** As a contract analyst, I want the system to extract key contract information and payment obligations, so that I have a complete overview of the agreement and no financial commitments are missed.
+Features include middleware and OpenAPI documentation.
 
-#### Acceptance Criteria
+The service exposes REST APIs for integration with the Smart Payment Infrastructure.
 
-1. WHEN contract text is processed THEN the system SHALL use external LLM APIs (GPT-4o, Claude, etc.) to analyze content
-2. WHEN LLM analysis is performed THEN the system SHALL extract and display a contract summary containing buyer name, seller name, nature of goods (physical/digital/services), and total contract value
-3. WHEN contract summary is generated THEN the system SHALL validate that all required fields are populated and flag any missing critical information
-4. WHEN LLM analysis is performed THEN the system SHALL identify all clauses that trigger monetary transfers
-5. WHEN payment obligations are found THEN the system SHALL extract obligation descriptions, trigger conditions, and payment amounts
-6. WHEN percentage-based payments are identified THEN the system SHALL calculate absolute amounts based on total contract value from the summary
-7. IF LLM analysis fails THEN the system SHALL retry with alternative models and log failures for manual review
+It supports contract uploads in multiple formats (with OCR).
 
-### Requirement 3
+It leverages external LLMs (e.g., OpenAI GPT-4o, Anthropic Claude).
 
-**User Story:** As a project manager, I want payment milestones organized in chronological and functional order, so that I can understand the payment flow throughout the contract lifecycle.
+It maintains an industry knowledge database.
 
-#### Acceptance Criteria
+It integrates with existing dispute resolution services.
 
-1. WHEN payment obligations are extracted THEN the system SHALL sequence them chronologically based on contract timeline
-2. WHEN chronological ordering is complete THEN the system SHALL group related obligations by functional categories
-3. WHEN milestones are organized THEN the system SHALL assign percentage allocations that sum to 100% of contract value
-4. WHEN milestone sequencing is complete THEN the system SHALL validate logical dependencies between milestones
-5. IF milestone dependencies conflict THEN the system SHALL flag inconsistencies for human review
+It uses Go 1.21+ for its concurrency model (goroutines/channels).
 
-### Requirement 4
+It uses standard library for HTTP, and third-party libs for specific needs.
 
-**User Story:** As a risk manager, I want the system to identify missing contractual elements and vulnerabilities based on industry best practices using a comprehensive knowledge database, so that I can address gaps before contract execution.
+Libs include pdfcpu for PDF handling, Qwen API client for OCR, OpenAI SDK.
 
-#### Acceptance Criteria
+### 1.2 Scope
 
-1. WHEN contract analysis is complete THEN the system SHALL identify the nature of buyer's and seller's businesses from contract content
-2. WHEN business types are identified THEN the system SHALL determine the relevant industry categories (manufacturing, services, technology, etc.)
-3. WHEN industry context is established THEN the system SHALL first query its internal industry knowledge database for best practices and standard contractual terms
-4. WHEN industry is not found in database THEN the system SHALL perform web searches for current industry best practices and store findings in the industry knowledge database
-5. WHEN vulnerability assessment runs THEN the system SHALL flag potential risks for both buyer and seller based on stored industry-specific standards
-6. WHEN risk analysis is performed THEN the system SHALL suggest specific contractual improvements aligned with database-stored industry best practices
-7. WHEN recommendations are generated THEN the system SHALL categorize them by severity (low, medium, high, critical) and include industry-specific reasoning with database references
-8. WHEN analysis is complete THEN the system SHALL provide actionable recommendations with legal reasoning and industry benchmark references from the knowledge database
+- **In Scope**: Document upload/validation/extraction, LLM-based analysis
+  (summary, milestones, risks, compliance).
 
-### Requirement 12
+  Milestone sequencing/grouping, knowledge DB management (queries/updates).
 
-**User Story:** As a system administrator, I want the system to maintain an up-to-date industry knowledge database, so that contract analysis remains current with evolving regulations and best practices.
+  Smart Cheque config generation, workflow visualization/editing
+  (Mermaid + drag-drop via frontend integration).
 
-#### Acceptance Criteria
+  Collaborative approvals, dispute pathway integration, logging/monitoring,
+  HTTP server with middleware.
 
-1. WHEN new industry findings are discovered through web searches THEN the system SHALL store them in the industry knowledge database with proper categorization and timestamps
-2. WHEN storing industry knowledge THEN the system SHALL organize data by industry type, jurisdiction, regulation type, and contractual best practices
-3. WHEN the system runs periodic updates THEN it SHALL automatically refresh industry knowledge database with latest regulations, laws, and contractual best practices
-4. WHEN periodic updates run THEN the system SHALL schedule them based on industry volatility (high-regulation industries updated more frequently)
-5. WHEN database updates occur THEN the system SHALL maintain version history and track changes to industry standards over time
-6. WHEN conflicting information is found during updates THEN the system SHALL flag discrepancies for manual review and resolution
-7. WHEN industry knowledge is accessed THEN the system SHALL log usage patterns to optimize update frequencies and identify knowledge gaps
+- **Out of Scope**: Full frontend implementation (assume API-driven UI like React with drag-drop libs).
 
-### Requirement 5
+  XRPL escrow direct interaction (delegate to external Smart Cheque service).
 
-**User Story:** As a Smart Cheque creator, I want extracted milestones automatically converted to Smart Cheque configurations, so that I can create milestone-based payments without manual setup.
+  Real-time notifications beyond email (use existing infra).
 
-#### Acceptance Criteria
+- **Assumptions**: Go modules for dependency management.
 
-1. WHEN milestone extraction is approved by both parties THEN the system SHALL generate multiple Smart Cheque configurations based on the contractual obligations
-2. WHEN Smart Cheque configs are created THEN each SHALL include payer_id, payee_id, amount, currency (USDT/USDC/e₹), milestones array, and contract_hash
-3. WHEN milestone configs are generated THEN each milestone SHALL include id, description, amount, verification_method (oracle/manual/hybrid), oracle_config, sequence_order, dependencies, and trigger_conditions
-4. WHEN Smart Cheques are created THEN they SHALL start in "created" status (proposed state) and remain inactive until both parties approve
-5. WHEN both parties approve THEN Smart Cheques SHALL transition through valid states: created → locked → in_progress → completed (or disputed at any stage)
-6. IF milestone mapping fails THEN the system SHALL provide manual configuration options with pre-filled suggestions from the contract analysis
+  PostgreSQL for persistent storage (documents, DB knowledge, configs).
 
-### Requirement 6
+  Redis for caching/rate limiting.
 
-**User Story:** As a compliance officer, I want contract analysis results to include regulatory and legal compliance checks, so that contracts meet jurisdictional requirements.
+  External services (LLM APIs, Qwen for OCR, web search via Google API or
+  similar) are available with API keys in env vars.
 
-#### Acceptance Criteria
+### 1.3 Design Principles
 
-1. WHEN contracts are analyzed THEN the system SHALL check for required legal clauses based on jurisdiction
-2. WHEN compliance analysis runs THEN the system SHALL identify missing regulatory requirements
-3. WHEN legal gaps are found THEN the system SHALL suggest standard clause additions
-4. WHEN cross-border contracts are detected THEN the system SHALL flag multi-jurisdictional compliance requirements
-5. WHEN compliance check is complete THEN the system SHALL generate compliance reports for legal review
+- **Clean Architecture**: Layers: Entities (domain models), Use Cases
+  (application services).
 
-### Requirement 7
+  Interfaces (adapters), Infrastructure (external impls).
 
-**User Story:** As a contract party, I want the system to recommend optimal dispute resolution pathways based on existing dispute handling infrastructure, so that both parties have agreed-upon mechanisms for conflict resolution before issues arise.
+- **SOLID Compliance**: Single responsibility (e.g., separate upload vs. analysis services).
 
-#### Acceptance Criteria
+  Open/closed (interfaces for LLMs), Liskov substitution (retryable clients).
 
-1. WHEN contract analysis is complete THEN the system SHALL analyze the contract type, value, and complexity to suggest appropriate dispute resolution mechanisms using the existing ResolutionRoutingService
-2. WHEN dispute pathways are generated THEN the system SHALL recommend resolution methods from the existing system: mutual_agreement, mediation, arbitration, court, administrative
-3. WHEN dispute resolution recommendations are created THEN the system SHALL use existing categorization rules to determine priority levels (low, normal, high, urgent) and categories (payment, milestone, contract_breach, fraud, technical, other)
-4. WHEN mediation options are suggested THEN the system SHALL leverage existing dispute management infrastructure including evidence handling, audit trails, and notification systems
-5. WHEN both parties approve dispute pathways THEN the system SHALL integrate these mechanisms into Smart Cheque configurations with proper dispute status transitions (initiated → under_review → escalated → resolved → closed)
-6. WHEN Smart Cheques enter disputed status THEN they SHALL automatically freeze funds and trigger the approved dispute resolution workflow
-7. IF either party rejects the dispute pathways THEN the system SHALL allow negotiation and modification until both parties reach agreement
+  Interface segregation (narrow contracts), Dependency inversion
+  (inject deps via interfaces).
 
-### Requirement 8
+- **Error Handling**: Custom error types (e.g., `ErrInvalidContract`).
 
-**User Story:** As a business user, I want to visualize and edit milestone workflows using a drag-and-drop interface, so that I can easily understand and modify the payment sequence.
+  Structured JSON responses, logging with context (correlation IDs).
 
-#### Acceptance Criteria
+- **Concurrency**: Goroutines for parallel OCR/LLM calls, channels for
+  milestone sequencing.
 
-1. WHEN AI analysis is complete THEN the system SHALL generate a visual flowchart representation of milestones using Mermaid-style diagrams
-2. WHEN users view the workflow THEN they SHALL see a drag-and-drop editor similar to Zapier/Make/n8n interfaces
-3. WHEN users modify the workflow THEN they SHALL be able to drag milestones to reorder, edit conditions, and adjust payment amounts
-4. WHEN modifications are made THEN the system SHALL validate workflow logic and ensure total percentages equal 100%
-5. WHEN edits are saved THEN the system SHALL track changes and maintain detailed audit trails
+- **Security**: JWT for auth (roles: user, analyst, admin).
 
-### Requirement 9
+  Input validation (multipart form limits), secure storage (encrypted docs).
 
-**User Story:** As a contract party, I want collaborative approval of workflow modifications, so that both buyer and seller must agree to changes before they take effect.
+  Rate limiting (e.g., 10 req/min per IP).
 
-#### Acceptance Criteria
+- **Observability**: Structured logging (Zap), metrics (Prometheus), tracing (OpenTelemetry).
 
-1. WHEN workflow modifications are made THEN the system SHALL notify the other party via email with change details
-2. WHEN notifications are sent THEN they SHALL include visual diff comparisons showing before/after workflow states
-3. WHEN the other party reviews changes THEN they SHALL be able to approve, reject, or suggest counter-modifications
-4. WHEN both parties approve THEN the system SHALL commit changes and update the Smart Cheque configuration
-5. IF either party rejects changes THEN the system SHALL revert to the previous approved version and allow further negotiation
+  Health checks.
 
-### Requirement 10
+## 2. System Architecture
 
-**User Story:** As a contract party, I want the system to break approved contracts into multiple Smart Cheques automatically with integrated dispute handling, so that payments are executed as milestones are completed throughout the contract lifecycle.
+### 2.1 High-Level Overview
 
-#### Acceptance Criteria
+The system follows a hexagonal (ports and adapters) architecture to decouple
+core logic from externalities.
 
-1. WHEN final contract workflow and dispute pathways are approved by both parties THEN the system SHALL create individual Smart Cheques for each milestone
-2. WHEN Smart Cheques are generated THEN the total amount SHALL be distributed across milestones according to the approved percentage allocations
-3. WHEN Smart Cheques are created THEN each SHALL include verification_method mapping to existing systems (logistics APIs for delivery, manual approval for quality checks, oracle integration for automated verification)
-4. WHEN Smart Cheques are created THEN each SHALL include the approved dispute resolution pathways and automatic integration with the existing dispute management system
-5. WHEN disputes arise on Smart Cheques THEN the system SHALL automatically create dispute records with proper categorization, priority assignment, and evidence handling capabilities
-6. WHEN Smart Cheques enter "disputed" status THEN funds SHALL be frozen and the dispute SHALL follow the pre-approved resolution pathway (mutual_agreement → mediation → arbitration → court as configured)
-7. WHEN disputes are resolved THEN Smart Cheques SHALL automatically transition to appropriate final states based on resolution outcomes (completed for payment release, or other states based on dispute resolution)
-8. WHEN Smart Cheques are in "created" status THEN they SHALL remain inactive and no funds SHALL be locked until payer activates them
-9. WHEN payer activates Smart Cheques THEN they SHALL transition to "locked" status with funds secured in XRPL escrow addresses
+Core domain logic (milestone extraction, risk assessment) is independent of
+HTTP, DB, or LLM impls.
 
-### Requirement 13
+Mermaid diagram for overall flow:
 
-**User Story:** As a system administrator, I want comprehensive logging and monitoring of contract analysis processes, so that I can ensure system reliability and troubleshoot issues.
+```mermaid
+graph TB
+    subgraph "Presentation Layer (HTTP API)"
+        A[REST Endpoints: Upload, Analyze, Generate Configs, Edit Workflow]
+        B[JWT Auth Middleware]
+        C[Rate Limiting & Logging Middleware]
+        D[OpenAPI Docs]
+    end
+    subgraph "Application Layer (Use Cases)"
+        E[UploadUseCase: Validate & Extract Text]
+        F[AnalysisUseCase: LLM Summary, Milestones, Risks]
+        G[SequencingUseCase: Chronological Grouping]
+        H[KnowledgeUseCase: Query/Update DB]
+        I[ConfigUseCase: Smart Cheque Generation]
+        J[WorkflowUseCase: Visualize/Edit/Approve]
+        K[DisputeUseCase: Pathway Integration]
+    end
+    subgraph "Domain Layer (Entities & Services)"
+        L[Contract Entity: Summary, Milestones, Risks]
+        M[Milestone Entity: Description, Amount, Dependencies]
+        N[SmartCheque Entity: Configs, States]
+        O[Knowledge Entity: Industry Standards]
+        P[Domain Services: Validation, Sequencing Logic]
+    end
+    subgraph "Infrastructure Layer (Adapters)"
+        Q[DB Repo: PostgreSQL for Docs/Knowledge/Configs]
+        R[OCR Adapter: Tesseract/pdfcpu]
+        S[LLM Adapter: OpenAI/Claude SDKs with Retry/Circuit Breaker]
+        T[WebSearch Adapter: Google Custom Search API]
+        U[Email Adapter: For Approvals]
+        V[External: ResolutionRoutingService]
+    end
+    A --> E
+    E --> F
+    F --> G & H & K
+    G --> I & J
+    I --> V
+    J --> U
+    L & M & N & O --> P
+    P --> Q
+    P --> R
+    P --> S
+    P --> T
+```
 
-#### Acceptance Criteria
+### 2.2 Layers Breakdown
 
-1. WHEN contract analysis starts THEN the system SHALL log all processing steps with timestamps
-2. WHEN LLM API calls are made THEN the system SHALL log request/response data and performance metrics
-3. WHEN errors occur THEN the system SHALL capture detailed error information and context
-4. WHEN analysis is complete THEN the system SHALL store confidence scores and processing metadata
-5. WHEN monitoring alerts trigger THEN the system SHALL notify administrators of system issues or degraded performance
+- **Presentation**: Gin framework for HTTP server.
 
-### Requirement 14
+  Middleware chain: recovery, CORS, auth, rate limit (golang.org/x/time/rate),
+  logging (go.uber.org/zap).
 
-**User Story:** As a developer, I want the system built with strict coding best practices and clean architecture, so that the codebase is maintainable, scalable, and follows industry standards.
+- **Application**: Interfaces for use cases (e.g., `type Analyzer interface{Analyze(ctx context.Context, text string) (*ContractSummary, error)}`).
 
-#### Acceptance Criteria
+  Orchestrates domain calls.
 
-1. WHEN code is written THEN it SHALL follow clean architecture principles with clear separation of concerns
-2. WHEN implementing functionality THEN the system SHALL use SOLID principles and dependency inversion patterns
-3. WHEN creating components THEN they SHALL be modular with well-defined interfaces and contracts
-4. WHEN writing code THEN it SHALL maintain 95%+ test coverage with comprehensive unit and integration tests
-5. WHEN committing code THEN it SHALL pass automated linting, formatting, and security scanning checks
-6. WHEN building services THEN they SHALL implement proper error handling, logging, and observability patterns
-7. WHEN integrating external services THEN they SHALL use resilience patterns like circuit breakers and retry logic
+- **Domain**: Immutable structs (e.g., `type Milestone struct{ID string; Amount decimal.Decimal; ...}`).
 
-### Requirement 15
+  Business rules (e.g., percentages sum to 100%).
 
-**User Story:** As a system architect, I want a robust HTTP server foundation with production-ready middleware, so that the microservice can handle enterprise-grade traffic securely and reliably.
+- **Infrastructure**: Repos (GORM for ORM), adapters (e.g., `openai.Client` with resilience via
+  github.com/sony/gobreaker).
 
-#### Acceptance Criteria
+### 2.3 Deployment Architecture
 
-1. WHEN the HTTP server starts THEN it SHALL implement graceful shutdown and proper signal handling
-2. WHEN requests are received THEN the system SHALL apply comprehensive middleware including CORS, rate limiting, request logging, and recovery
-3. WHEN processing requests THEN the system SHALL validate input/output with structured error responses and proper HTTP status codes
-4. WHEN handling authentication THEN the system SHALL implement JWT-based authentication and role-based authorization middleware
-5. WHEN tracing requests THEN the system SHALL propagate correlation IDs and implement distributed tracing
-6. WHEN monitoring health THEN the system SHALL provide health check endpoints with dependency validation
-7. WHEN serving APIs THEN the system SHALL generate and serve OpenAPI documentation with proper versioning
+- Containerized (Docker); orchestrated with Kubernetes/Docker Compose.
+
+- Env: Dev (in-memory DB), Prod (Postgres + Redis).
+
+- CI/CD: GitHub Actions for lint (golangci-lint), test (go test -cover),
+  build (go build).
+
+## 3. Data Models
+
+All models use Go structs with JSON tags for API serialization.
+
+Use `github.com/shopspring/decimal` for precise amounts; `time.Time` for timestamps.
+
+### 3.1 Core Entities
+
+```go
+// Contract represents the analyzed contract.
+type Contract struct {
+    ID          string                 `json:"id" gorm:"primaryKey"`
+    Hash        string                 `json:"contract_hash"`
+    Summary     *ContractSummary       `json:"summary"`
+    Milestones  []*Milestone           `json:"milestones"`
+    Risks       []*RiskAssessment      `json:"risks"`
+    Compliance  *ComplianceReport      `json:"compliance"`
+    KnowledgeID string                 `json:"knowledge_id"`
+    Confidence  float64                `json:"confidence_score"`
+    Status      ContractStatus         `json:"status"` // e.g., "validated", "analyzed"
+    CreatedAt   time.Time              `json:"created_at"`
+    UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+// ContractSummary holds key extracted info.
+type ContractSummary struct {
+    BuyerName    string `json:"buyer_name"`
+    SellerName   string `json:"seller_name"`
+    GoodsNature  string `json:"goods_nature"` // "physical", "digital", "services"
+    TotalValue   decimal.Decimal `json:"total_value"`
+    Currency     string         `json:"currency"` // "USDT", "USDC", "e₹"
+    Jurisdiction string         `json:"jurisdiction"`
+}
+
+// Milestone represents a payment obligation.
+type Milestone struct {
+    ID             string            `json:"id" gorm:"primaryKey"`
+    Description    string            `json:"description"`
+    Amount         decimal.Decimal   `json:"amount"`
+    Percentage     float64           `json:"percentage"`
+    Trigger        string            `json:"trigger_condition"`
+    SequenceOrder  int               `json:"sequence_order"`
+    Dependencies   []string          `json:"dependencies"`
+    Category       string            `json:"category"` // functional group
+    Verification   VerificationMethod `json:"verification_method"`
+    OracleConfig   *OracleConfig     `json:"oracle_config,omitempty"`
+}
+
+// VerificationMethod enum-like.
+type VerificationMethod string
+
+const (
+    Manual   VerificationMethod = "manual"
+    Oracle   VerificationMethod = "oracle"
+    Hybrid   VerificationMethod = "hybrid"
+    API      VerificationMethod = "api" // e.g., logistics
+)
+
+// OracleConfig for oracle integration.
+type OracleConfig struct {
+    Endpoint string `json:"endpoint"`
+    APIKey   string `json:"api_key"` // encrypted
+}
+
+// RiskAssessment for vulnerabilities.
+type RiskAssessment struct {
+    ID        string `json:"id" gorm:"primaryKey"`
+    Type      string `json:"type"` // "buyer", "seller"
+    Severity  Severity `json:"severity"` // "low", "medium", "high", "critical"
+    Description string `json:"description"`
+    Recommendation string `json:"recommendation"`
+    IndustryRef string `json:"industry_reference"`
+}
+
+type Severity string
+
+const (
+    Low      Severity = "low"
+    Medium   Severity = "medium"
+    High     Severity = "high"
+    Critical Severity = "critical"
+)
+
+// ComplianceReport for legal checks.
+type ComplianceReport struct {
+    MissingClauses []string `json:"missing_clauses"`
+    Suggestions    []string `json:"suggestions"`
+    IsCompliant    bool     `json:"is_compliant"`
+    Report         string   `json:"report"`
+}
+
+// SmartChequeConfig generated from milestones.
+type SmartChequeConfig struct {
+    ID          string         `json:"id" gorm:"primaryKey"`
+    PayerID     string         `json:"payer_id"`
+    PayeeID     string         `json:"payee_id"`
+    Amount      decimal.Decimal `json:"amount"`
+    Currency    string         `json:"currency"`
+    Milestones  []*Milestone   `json:"milestones"`
+    ContractHash string        `json:"contract_hash"`
+    Status      ChequeStatus   `json:"status"` // "created", "locked",
+    // "in_progress", "completed", "disputed"
+    DisputePath DisputePath    `json:"dispute_path"`
+    CreatedAt   time.Time      `json:"created_at"`
+}
+
+type ChequeStatus string
+
+const (
+    Created     ChequeStatus = "created"
+    Locked      ChequeStatus = "locked"
+    InProgress  ChequeStatus = "in_progress"
+    Completed   ChequeStatus = "completed"
+    Disputed    ChequeStatus = "disputed"
+)
+
+type DisputePath struct {
+    Method     string   `json:"method"` // "mutual_agreement", "mediation", etc.
+    Priority   string   `json:"priority"` // "low", "normal", "high", "urgent"
+    Category   string   `json:"category"` // "payment", "breach", etc.
+    Transitions []string `json:"state_transitions"` // e.g., "initiated", "under_review"
+}
+
+// KnowledgeEntry for industry DB.
+type KnowledgeEntry struct {
+    ID           string    `json:"id" gorm:"primaryKey"`
+    Industry     string    `json:"industry"`
+    Jurisdiction string    `json:"jurisdiction"`
+    Type         string    `json:"type"` // "regulation", "best_practice"
+    Content      string    `json:"content"`
+    Version      string    `json:"version"`
+    UpdatedAt    time.Time `json:"updated_at"`
+    Source       string    `json:"source"` // web URL or internal
+}
+```
+
+### 3.2 DTOs for API
+
+- Request: `type UploadRequest struct{File multipart.FileHeader`form:"file"`}`
+
+- Response: Wrap entities in `type APIResponse[T any] struct{Data T`json:"data"`; Error *APIError`json:"error,omitempty"`}`
+
+## 4. API Design
+
+### 4.1 Endpoints
+
+Use Gin router; base path `/api/v1`. All endpoints require JWT auth
+(except health/upload?).
+
+- **POST /contracts/upload**: Upload document (multipart/form-data).
+
+  Returns contract ID and validation status. (Req 1)
+
+- **GET /contracts/{id}**: Retrieve contract summary/milestones/risks. (Req 2,3,4)
+
+- **POST /contracts/{id}/analyze**: Trigger full analysis (LLM, sequencing, risks).
+
+  Async via job queue? Returns job ID. (Req 2,3,4,6)
+
+- **GET /contracts/{id}/analysis-results**: Poll for results (summary, milestones, compliance). (Req 2,6)
+
+- **POST /contracts/{id}/risk-assessment**: Run vulnerability check. (Req 4)
+
+- **GET /knowledge/{industry}**: Query industry best practices. (Req 4,12)
+
+- **POST /knowledge/update**: Admin: Web search and update DB. (Req 12)
+
+- **GET /contracts/{id}/workflow**: Get Mermaid diagram. (Req 8)
+
+- **PUT /contracts/{id}/workflow**: Edit milestones (JSON body with reordered array).
+
+  Validates sum=100%. (Req 8)
+
+- **POST /contracts/{id}/approve-workflow**: Collaborative approval (body: {approved: bool, comments: string}).
+
+  Sends email. (Req 9)
+
+- **POST /contracts/{id}/smart-cheques**: Generate configs post-approval. (Req 5,10,11)
+
+- **GET /smart-cheques/{cheque_id}**: Retrieve config/status. (Req 5,10)
+
+- **POST /disputes/suggest**: Suggest pathways for contract. (Req 7)
+
+- **Health**: GET /health (checks DB, LLM connectivity). (Req 14,15)
+
+- **Admin**: POST /admin/update-knowledge (periodic cron). (Req 12)
+
+### 4.2 OpenAPI Spec
+
+Auto-generated via `github.com/swaggo/gin-swag`.
+
+Example annotation:
+
+```go
+// @Summary Upload Contract
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Contract file"
+// @Success 200 {object} APIResponse[string]
+// @Router /contracts/upload [post]
+func UploadContract(c *gin.Context) { ... }
+```
+
+Serve at `/swagger/index.html`.
+
+### 4.3 Error Responses
+
+```json
+{
+  "error": {
+    "code": "INVALID_FILE",
+    "message": "File exceeds 10MB",
+    "details": {...}
+  }
+}
+```
+
+## 5. Component Design
+
+### 5.1 Upload and Extraction (Req 1)
+
+- **Service**: `UploadService` impl `Uploader interface{UploadAndExtract(ctx context.Context, file io.Reader, format string) (*ExtractedText, error)}`
+
+- **Impl**: Check size/format (mimetypes); OCR if image/PDF using cloud vision
+  models like Qwen API (github.com/ledongthuc/pdf for text PDFs, Qwen for
+  scanned/images).
+
+- **Storage**: Save original to S3-like (minio) or FS; text to DB with
+  confidence (from OCR/LLM).
+
+- **Validation**: LLM call to check if contract (prompt: "Is this a valid
+  buyer-seller contract? Extract parties/obligations.").
+
+### 5.2 Analysis and Extraction (Req 2)
+
+- **Service**: `AnalyzerService` with `AnalyzeText(ctx context.Context, text string) (*ContractSummary, []*Milestone, error)`
+
+- **LLM Integration**: Use `github.com/openai/openai-go` or `github.com/anthropic-ai/sdk`.
+
+  Prompt engineering for summary/obligations (e.g., "Extract buyer/seller,
+  total value, payment clauses with amounts/conditions.").
+
+- **Retry**: Exponential backoff (3 attempts), fallback to Claude if GPT fails.
+
+- **Percentage Calc**: If % based, `amount = total * percentage / 100`.
+
+### 5.3 Milestone Organization (Req 3)
+
+- **Service**: `SequencerService` sorts milestones by timeline
+  (LLM-derived dates or order).
+
+  Groups by category (e.g., "delivery", "payment").
+
+  Assigns % (normalize to sum 100%).
+
+  Validates deps (DAG check via graph lib like gonum/graph).
+
+- **Conflict Flag**: If cycle in deps, return error with details.
+
+### 5.4 Risk and Knowledge (Req 4,12)
+
+- **DB Schema**: Table `knowledge_entries` as above; indexes on
+  industry/jurisdiction.
+
+- **Service**: `KnowledgeService` queries DB first; if miss, web search (github.com/rocketlaunchr/google-search).
+
+  Store with version/timestamp.
+
+- **Periodic Update**: Cron job (github.com/robfig/cron) schedules based on volatility.
+
+  Config map: {"finance": "daily", "tech": "weekly"}.
+
+- **Assessment**: Prompt LLM with DB standards: "Compare contract to these best
+  practices: [db_content]. Flag risks by severity."
+
+### 5.5 Smart Cheque Generation (Req 5,11)
+
+- **Service**: `ConfigGenerator` maps milestones to SmartChequeConfig;
+  injects dispute paths.
+
+- **States**: FSM-like (github.com/Loopring/relay-lib/fsm? or custom);
+  transitions on events (approve → locked).
+
+- **Activation**: API call to external XRPL service for escrow.
+
+### 5.6 Compliance Checks (Req 6)
+
+- **Service**: `ComplianceService` uses jurisdiction from summary; query
+  knowledge for clauses.
+
+  Suggest additions via LLM ("Suggest clauses for [jurisdiction] missing [gaps].").
+
+### 5.7 Dispute Pathways (Req 7)
+
+- **Service**: `DisputeService` analyzes contract (value/complexity via LLM),
+  suggests from enum.
+
+  Integrate with ResolutionRoutingService (HTTP client call).
+
+- **Integration**: On dispute, POST to external /disputes with
+  category/priority; freeze via status update.
+
+### 5.8 Workflow Visualization and Editing (Req 8)
+
+- **Visualization**: Generate Mermaid from milestones: `graph TD; M1 --> M2;`
+  (string builder).
+
+- **Editing**: API accepts JSON patch; validate logic (sum %, deps acyclic);
+  store as JSONB in DB.
+
+- **Drag-Drop**: API supports; frontend assumed to handle UI.
+
+### 5.9 Collaborative Approval (Req 9)
+
+- **Service**: `ApprovalService` sends email (github.com/jordan-wright/email)
+  with diff (jsonpatch lib).
+
+  Tracks approvals in DB (pending/approved/rejected).
+
+### 5.10 Logging and Monitoring (Req 12,13,14)
+
+- **Logging**: Zap for structured logs; correlation ID via middleware
+  (github.com/google/uuid).
+
+- **Metrics**: Prometheus client_golang; expose /metrics.
+
+- **Alerts**: Integrate with external (e.g., Slack webhook on errors).
+
+- **Tests**: Unit (mock interfaces), integration (testcontainers for DB),
+  coverage via go test.
+
+### 5.11 HTTP Server (Req 14)
+
+- **Framework**: Gin for routing; graceful shutdown (signal.Notify).
+
+- **Middleware**: Custom chain; JWT (github.com/golang-jwt/jwt); rate limit;
+  tracing (opentelemetry-go).
+
+- **Health**: /health checks DB ping, LLM health (mockable endpoint).
+
+## 6. Database Design
+
+- **DB**: PostgreSQL; schema via migrations (github.com/golang-migrate/migrate).
+
+- **Tables**:
+
+  - `contracts` (as entity)
+  - `milestones` (FK to contract)
+  - `smart_cheque_configs` (FK to contract)
+  - `knowledge_entries`
+  - `approvals` (for workflow changes: contract_id, user_id, status)
+  - `logs` (optional, for audits: jsonb events)
+
+- **Indexes**: On contract_id, industry, status for queries.
+
+- **Constraints**: Check total % = 100 for milestones.
+
+## 7. External Dependencies and Integrations
+
+- **LLMs**: OpenAI/Claude APIs; env: OPENAI_API_KEY.
+
+- **OCR**: Qwen cloud vision model API (e.g., Qwen-VL via Alibaba DashScope).
+
+- **Web Search**: Google Custom Search JSON API.
+
+- **Email**: SMTP or SendGrid.
+
+- **Dispute Service**: HTTP client to ResolutionRoutingService (baseURL in config).
+
+- **Libs**: gin-gonic/gin, gorm.io/gorm, go.uber.org/zap,
+  github.com/shopspring/decimal.
+
+  github.com/robfig/cron, swaggo/gin-swag.
+
+- **Resilience**: Circuit breaker for external calls; retry with backoff (github.com/cenkalti/backoff).
+
+## 8. Testing Strategy
+
+- **Unit Tests**: 80%+ coverage; mock interfaces (github.com/stretchr/testify/mock).
+
+- **Integration**: Test API with Gin test mode; DB with testcontainers-go.
+
+- **E2E**: Upload sample contract, assert milestones extracted.
+
+- **Security**: OWASP scans; fuzzing for inputs.
+
+- **Load**: JMeter for rate limiting.
+
+## 9. Deployment and Operations
+
+- **Dockerfile**: Multi-stage build; expose 8080.
+
+- **Config**: Viper for env/yaml (ports, keys, DB URL).
+
+- **Monitoring**: Prometheus + Grafana; logs to ELK.
+
+- **Scaling**: Horizontal pods; stateless except DB.
+
+- **Versioning**: Semantic; API v1 fixed.
+
+This design ensures maintainability, scalability, and alignment with
+requirements.
+
+Future iterations can refine based on prototypes.
+

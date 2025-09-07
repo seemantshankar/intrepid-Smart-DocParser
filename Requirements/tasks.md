@@ -2,99 +2,43 @@
 
 ## Overview
 
-This implementation plan breaks down the Contract Analysis and Milestone Extraction system into a standalone microservice project that exposes REST APIs for the main Smart Payment Infrastructure to consume. Each task focuses on implementing specific functionality as an independent service while providing clear API contracts for integration. The plan follows test-driven development principles and prioritizes early validation of core functionality through API endpoints.
+This implementation plan breaks down the Contract Analysis and Milestone Extraction system into discrete, manageable coding tasks that build incrementally toward a complete microservice. Each task focuses on implementing specific functionality through code while maintaining clean architecture principles and comprehensive testing. The plan follows test-driven development and prioritizes early validation of core functionality through working code implementations.
 
 ## Task List
 
-- [ ] 1. Establish project foundation with strict coding standards
-  - [ ] 1.1 Create project structure following Go best practices
-    - Initialize new Go project with proper module structure (contract-analysis-service)
-    - Set up clean architecture directories: cmd/, internal/, pkg/, api/, docs/, scripts/, configs/
-    - Create internal subdirectories: handlers/, services/, repositories/, models/, middleware/
-    - Set up pkg/ for reusable components and api/ for OpenAPI specifications
-    - Initialize Go modules with proper versioning and dependency management
-    - _Requirements: Project foundation_
+- [ ] 1. Establish project foundation and core architecture
+  - [ ] 1.1 Initialize Go project with clean architecture structure
+    - Create new Go module `contract-analysis-service` with proper versioning
+    - Set up clean architecture directory structure: `cmd/`, `internal/`, `pkg/`, `api/`, `configs/`
+    - Create internal subdirectories: `handlers/`, `services/`, `repositories/`, `models/`, `middleware/`
+    - Initialize dependency injection container and configuration management
+    - Set up structured logging with Zap and error handling patterns
+    - Create Makefile with build, test, lint, and format commands
+    - Write unit tests for configuration loading and dependency injection
+    - _Requirements: 14 (clean architecture, SOLID principles, modular components)_
 
-  - [ ] 1.2 Configure development environment and tooling
-    - Set up comprehensive linting with golangci-lint configuration
-    - Configure code formatting with gofmt and goimports
-    - Add pre-commit hooks for code quality enforcement
-    - Set up testing framework with testify and test coverage reporting
-    - Configure Docker and docker-compose for local development environment
-    - Create Makefile with common development tasks (build, test, lint, format)
-    - _Requirements: Code quality and development workflow_
+  - [ ] 1.2 Implement database layer with PostgreSQL integration
+    - Set up PostgreSQL connection with GORM and connection pooling
+    - Create database migration system with versioning capabilities
+    - Implement core domain models: Contract, Milestone, RiskAssessment, KnowledgeEntry
+    - Create repository interfaces and PostgreSQL implementations
+    - Add database transaction support and error handling
+    - Set up test database with testcontainers for integration testing
+    - Write comprehensive unit and integration tests for repository layer
+    - _Requirements: 14 (clean architecture, well-defined interfaces), data persistence foundation_
 
-  - [ ] 1.3 Implement core architectural patterns
-    - Define clean architecture interfaces for all layers (handlers, services, repositories)
-    - Create dependency injection container for managing service dependencies
-    - Implement configuration management with environment variables and config files
-    - Set up structured logging with configurable log levels and formats
-    - Create error handling patterns with custom error types and error wrapping
-    - Add context propagation patterns for request tracing and cancellation
-    - _Requirements: Architectural foundation_
-
-  - [ ] 1.4 Set up database layer with best practices
-    - Configure PostgreSQL with proper connection pooling and timeout settings
-    - Implement database migration system with versioning and rollback capabilities
-    - Create repository pattern interfaces with transaction support
-    - Set up database testing with test containers for integration tests
-    - Add database health checks and connection monitoring
-    - Implement query optimization and indexing strategies
-    - _Requirements: Database foundation_
-
-- [ ] 2. Build robust HTTP server and middleware foundation
-  - [ ] 2.1 Implement HTTP server with production-ready middleware
-    - Create HTTP server with graceful shutdown and signal handling
-    - Implement comprehensive middleware stack: CORS, rate limiting, request logging, recovery
+  - [ ] 1.3 Build HTTP server foundation with middleware stack
+    - Implement HTTP server with Gin framework and graceful shutdown
+    - Create middleware stack: CORS, rate limiting, request logging, recovery, JWT auth
     - Add request/response validation middleware with structured error responses
-    - Create authentication and authorization middleware with JWT support
-    - Implement request tracing and correlation ID propagation
-    - Add health check endpoints (/health, /ready) with dependency checks
-    - Write unit tests for all middleware components
-    - _Requirements: HTTP foundation and security_
+    - Implement correlation ID propagation and distributed tracing setup
+    - Create health check endpoints (`/health`, `/ready`) with dependency validation
+    - Set up OpenAPI documentation generation with Swagger
+    - Write unit tests for all middleware components and server lifecycle
+    - _Requirements: 15 (HTTP server, middleware, authentication, health checks, OpenAPI docs)_
 
-  - [ ] 2.2 Build API routing and handler framework
-    - Implement modular router with versioned API endpoints (/api/v1/)
-    - Create base handler interface with common functionality (validation, error handling)
-    - Add request/response DTOs with proper validation tags
-    - Implement handler testing utilities and mock frameworks
-    - Create OpenAPI specification generation from code annotations
-    - Add API documentation serving with Swagger UI
-    - Write integration tests for routing and handler framework
-    - _Requirements: API foundation and documentation_
-
-  - [ ] 2.3 Establish service layer patterns and interfaces
-    - Define service interfaces with clear contracts and error handling
-    - Implement service layer with business logic separation from handlers
-    - Create service testing patterns with dependency mocking
-    - Add service-level validation and business rule enforcement
-    - Implement transaction management patterns across service boundaries
-    - Create service metrics and monitoring hooks
-    - Write comprehensive unit tests for service layer patterns
-    - _Requirements: Service layer architecture_
-
-- [ ] 3. Implement core domain models and repository patterns
-  - [ ] 3.1 Design and implement domain models with validation
-    - Create comprehensive domain models (Document, Contract, Milestone, Analysis, etc.)
-    - Implement model validation with struct tags and custom validators
-    - Add model serialization/deserialization with proper JSON handling
-    - Create model testing utilities and test data builders
-    - Implement value objects for type safety (DocumentID, ContractID, etc.)
-    - Add model documentation with clear field descriptions and constraints
-    - Write comprehensive unit tests for all domain models
-    - _Requirements: Domain modeling and validation_
-
-  - [ ] 3.2 Implement repository pattern with database abstraction
-    - Create repository interfaces for all domain entities with CRUD operations
-    - Implement PostgreSQL repository implementations with optimized queries
-    - Add repository transaction support with rollback capabilities
-    - Create repository testing patterns with test database setup/teardown
-    - Implement query builders for complex filtering and sorting
-    - Add repository metrics and performance monitoring
-    - Write integration tests for all repository operations
-    - _Requirements: Data access layer and persistence_
-
-  - [ ] 3.3 Build external service integration framework
+- [ ] 2. Build external service integration framework
+  - [ ] 2.1 Create external service client framework with resilience patterns
     - Create external service client interfaces with proper abstraction
     - Implement HTTP client with retry logic, circuit breaker, and timeout handling
     - Add service client configuration management and credential handling
@@ -102,265 +46,278 @@ This implementation plan breaks down the Contract Analysis and Milestone Extract
     - Implement service client metrics and error tracking
     - Add service client testing utilities and integration test patterns
     - Write unit and integration tests for external service framework
-    - _Requirements: External service integration and resilience_
+    - _Requirements: 14 (resilience patterns like circuit breakers and retry logic)_
 
-- [ ] 4. Implement document processing and storage service
-  - [ ] 4.1 Implement secure document upload service
-    - Create document upload service with multi-format support (PDF, DOCX, TXT, JPG, PNG, TIFF)
-    - Implement file validation with size limits, format verification, and security scanning
-    - Add secure document storage with encryption at rest and access controls
-    - Create document metadata management and indexing
-    - Implement document retrieval with proper authorization checks
-    - Add document lifecycle management (retention, deletion, archiving)
-    - Write comprehensive unit and integration tests for document service
-    - _Requirements: 1.1, 1.2, 1.6_
+  - [ ] 2.2 Implement LLM API integration service
+    - Create LLM service integration with OpenAI and Claude APIs
+    - Add LLM API retry logic with exponential backoff and fallback mechanisms
+    - Implement prompt engineering utilities and response parsing
+    - Create LLM API call logging with performance metrics
+    - Add circuit breaker patterns for LLM API reliability
+    - Create mock LLM responses for testing and development
+    - Write comprehensive unit tests with mock LLM interactions
+    - _Requirements: 2 (external LLM APIs), 14 (resilience patterns)_
 
-  - [ ] 4.2 Build OCR processing service with resilience patterns
-    - Implement OCR service integration with multiple providers (Tesseract, cloud services)
-    - Add OCR processing pipeline with queue management and retry logic
-    - Create confidence scoring and quality assessment for text extraction
-    - Implement fallback mechanisms and error handling for OCR failures
-    - Add OCR result caching and optimization for repeated processing
-    - Create OCR service monitoring and performance metrics
-    - Write integration tests with various document types and quality levels
-    - _Requirements: 1.3, 1.4, 1.5_
+  - [ ] 2.3 Build OCR service integration
+    - Implement OCR service integration with Qwen cloud vision API
+    - Add OCR processing pipeline with confidence scoring
+    - Create fallback mechanisms for OCR failures and retry logic
+    - Implement text extraction caching and optimization
+    - Add OCR result validation and quality assessment
+    - Create monitoring and performance metrics for OCR operations
+    - Write integration tests with mock OCR responses and real document samples
+    - _Requirements: 1 (OCR processing for images and scanned PDFs)_
 
-  - [ ] 4.3 Implement document validation and contract detection
-    - Create document validation service with business rule enforcement
-    - Implement contract detection using configurable validation rules
-    - Add document classification and type detection capabilities
-    - Create validation result storage and audit trail
-    - Implement validation confidence scoring and feedback mechanisms
-    - Add validation service metrics and performance monitoring
-    - Write unit tests for validation logic and integration tests for workflows
-    - _Requirements: 1.5, 1.6, 1.7, 1.8, 1.9_
+- [ ] 3. Implement document upload and processing pipeline
+  - [ ] 3.1 Create document upload service with validation
+    - Implement document upload handler supporting PDF, DOCX, TXT, JPG, PNG, TIFF formats
+    - Add file size validation (10MB limit) and format verification
+    - Create secure document storage with metadata tracking
+    - Implement document retrieval with proper authorization
+    - Add document lifecycle management (retention, deletion)
+    - Write comprehensive unit tests for upload validation and storage
+    - Create integration tests with various file types and edge cases
+    - _Requirements: 1 (document upload, format support, size validation, secure storage)_
 
-- [ ] 5. Implement industry knowledge service
-  - [ ] 5.1 Create industry knowledge API endpoints and database
-    - Design and implement industry knowledge database tables
-    - Create `GET /api/v1/industries/{industry}/knowledge` endpoint for knowledge retrieval
-    - Add `POST /api/v1/industries/{industry}/knowledge` endpoint for knowledge updates
-    - Implement industry classification and detection logic
-    - Write unit tests for database operations and API endpoints
-    - _Requirements: 4.1, 4.2, 12.1, 12.2_
+  - [ ] 3.2 Implement contract validation and detection service
+    - Create LLM-based contract validation using integrated LLM service from task 2.2
+    - Implement contract element detection (parties, obligations, terms)
+    - Add validation confidence scoring and feedback mechanisms
+    - Create contract classification and type detection
+    - Implement validation result storage with audit trails
+    - Write unit tests for validation logic and integration tests for LLM interactions
+    - _Requirements: 1 (contract validation, element detection, error handling)_
 
-  - [ ] 5.2 Add web search integration API for unknown industries
-    - Implement `POST /api/v1/industries/{industry}/research` endpoint for web research
-    - Create web search API integration for industry research
-    - Add automatic knowledge storage for new industries
-    - Include source tracking and credibility scoring
-    - Write integration tests with mock web search responses
-    - _Requirements: 4.3, 4.4, 12.1_
+- [ ] 4. Build industry knowledge database and management system
+  - [ ] 4.1 Create industry knowledge database schema and repository
+    - Create industry knowledge database schema and repository implementation
+    - Implement industry classification and detection from contract content
+    - Add knowledge query service with caching and optimization
+    - Create knowledge storage with versioning and conflict detection
+    - Add knowledge retrieval APIs with filtering and search capabilities
+    - Write unit tests for knowledge management and database operations
+    - _Requirements: 4 (industry knowledge database, business type identification)_
 
-  - [ ] 5.3 Create knowledge update management APIs
-    - Implement `POST /api/v1/industries/schedule-updates` endpoint for update scheduling
-    - Add `GET /api/v1/industries/update-status` endpoint for monitoring updates
-    - Create version control and change tracking for industry knowledge
-    - Include conflict detection and manual review workflows
-    - Write unit tests for update scheduling and conflict resolution
-    - _Requirements: 12.3, 12.4, 12.5, 12.6_
+  - [ ] 4.2 Add web search integration for knowledge discovery
+    - Create web search integration for unknown industries using Google API
+    - Implement automatic knowledge storage for new industry findings
+    - Add source tracking and credibility scoring for web search results
+    - Create periodic update scheduling based on industry volatility
+    - Add conflict detection and manual review workflows for knowledge updates
+    - Write unit tests for knowledge management and integration tests for web search
+    - _Requirements: 4 (web search for unknown industries), 12 (knowledge database maintenance and updates)_
 
-- [ ] 6. Implement risk assessment and recommendations engine
-  - [ ] 6.1 Create risk assessment API endpoint
-    - Implement `POST /api/v1/contracts/{id}/assess-risks` endpoint
-    - Add risk assessment using stored industry knowledge
-    - Include vulnerability detection for buyer and seller perspectives
+- [ ] 5. Build contract analysis and milestone extraction engine
+  - [ ] 5.1 Implement LLM-based contract analysis service
+    - Create contract analysis service using integrated LLM service from task 2.2
+    - Implement contract summary extraction (buyer, seller, goods, total value)
+    - Add payment obligation identification and extraction
+    - Create percentage-based payment calculation logic
+    - Add analysis confidence scoring and validation
+    - Create contract analysis result storage and retrieval
+    - Write comprehensive unit tests with mock LLM responses
+    - _Requirements: 2 (contract analysis, summary extraction, payment obligations)_
+
+  - [ ] 5.2 Create milestone sequencing and organization service
+    - Implement milestone chronological sequencing based on contract timeline
+    - Add functional categorization and grouping of related obligations
+    - Create percentage allocation logic ensuring 100% total distribution
+    - Implement milestone dependency validation with DAG checking
+    - Add conflict detection and flagging for inconsistent dependencies
+    - Create milestone normalization and validation rules
+    - Write unit tests for sequencing logic and dependency validation
+    - _Requirements: 3 (milestone sequencing, categorization, percentage allocation, dependency validation)_
+
+- [ ] 6. Implement risk assessment and compliance checking
+  - [ ] 6.1 Create risk assessment engine with industry knowledge integration
+    - Implement risk assessment service using stored industry knowledge from task 4
+    - Add vulnerability detection for both buyer and seller perspectives
     - Create severity categorization (low, medium, high, critical)
-    - Return structured risk assessment data via API
-    - Write unit tests for risk analysis accuracy
-    - _Requirements: 4.5, 4.6, 4.7_
+    - Implement industry-specific risk analysis with LLM integration
+    - Add risk recommendation generation with legal reasoning
+    - Create risk assessment result storage and retrieval
+    - Write unit tests for risk analysis logic and integration tests for complete workflows
+    - _Requirements: 4 (risk assessment, vulnerability detection, recommendations with industry knowledge)_
 
-  - [ ] 6.2 Add recommendations API endpoint
-    - Implement `GET /api/v1/contracts/{id}/recommendations` endpoint
-    - Add actionable recommendation generation with legal reasoning
-    - Include industry benchmark references and legal reasoning
-    - Create recommendation storage and retrieval functionality
-    - Return structured recommendations via API
-    - Write integration tests for complete risk assessment workflows
-    - _Requirements: 4.7, 4.8_
+  - [ ] 6.2 Build compliance checking service
+    - Implement jurisdiction-based compliance checking using industry knowledge
+    - Add regulatory requirement identification and validation
+    - Create missing clause detection and suggestion system
+    - Implement cross-border contract compliance flagging
+    - Add compliance report generation for legal review
+    - Create compliance result storage and audit trails
+    - Write unit tests for compliance logic and integration tests with various jurisdictions
+    - _Requirements: 6 (compliance checking, regulatory requirements, legal clause suggestions)_
 
-- [ ] 7. Implement dispute resolution pathway recommendations
-  - [ ] 7.1 Create dispute pathway recommendation API
-    - Implement `POST /api/v1/contracts/{id}/dispute-pathways` endpoint
-    - Add contract analysis-based dispute method selection (mutual_agreement, mediation, arbitration, court, administrative)
-    - Include priority and category mapping compatible with main project's dispute system
-    - Return structured dispute pathway recommendations via API
-    - Write unit tests for dispute pathway logic
-    - _Requirements: 7.1, 7.2, 7.3_
+- [ ] 7. Implement dispute resolution pathway system
+  - [ ] 7.1 Create dispute pathway recommendation service
+    - Implement contract analysis for dispute method selection using contract analysis from task 5
+    - Add dispute pathway recommendation logic (mutual_agreement, mediation, arbitration, court, administrative)
+    - Create priority and category mapping compatible with existing dispute system
+    - Implement dispute pathway storage and retrieval
+    - Add integration with ResolutionRoutingService using external service framework from task 2.1
+    - Create dispute pathway validation and conflict resolution
+    - Write unit tests for pathway logic and integration tests for external service calls
+    - _Requirements: 7 (dispute pathway recommendations, integration with existing dispute infrastructure)_
 
-  - [ ] 7.2 Add dispute pathway approval API endpoints
-    - Implement `POST /api/v1/contracts/{id}/dispute-pathways/approve` endpoint
-    - Add `GET /api/v1/contracts/{id}/dispute-pathways/status` for approval status
-    - Create bilateral approval system for dispute pathways
-    - Include negotiation and modification capabilities via API
-    - Write integration tests for approval workflows
-    - _Requirements: 7.4, 7.5, 7.6, 7.7_
-
-- [ ] 8. Implement visual workflow editor
-  - [ ] 8.1 Create workflow diagram generation API
-    - Implement `GET /api/v1/contracts/{id}/workflow/diagram` endpoint
-    - Add automatic Mermaid flowchart generation from milestone data
-    - Create visual representation of milestone sequences and dependencies
-    - Include export capabilities for workflow diagrams (SVG, PNG, Mermaid syntax)
-    - Write unit tests for diagram generation logic
-    - _Requirements: 8.1, 8.2_
-
-  - [ ] 8.2 Build workflow editor API endpoints
-    - Implement `PUT /api/v1/contracts/{id}/workflow` endpoint for workflow updates
-    - Add `POST /api/v1/contracts/{id}/workflow/validate` for real-time validation
-    - Create milestone reordering and condition editing via API
-    - Include percentage validation and dependency checking
-    - Write API tests for workflow editing functionality
-    - _Requirements: 8.2, 8.3, 8.4_
-
-  - [ ] 8.3 Add workflow versioning API endpoints
-    - Implement `GET /api/v1/contracts/{id}/workflow/versions` for version history
-    - Add `POST /api/v1/contracts/{id}/workflow/versions` for creating new versions
-    - Create detailed audit trails for all changes via API
-    - Include change visualization and diff capabilities
-    - Write unit tests for versioning functionality
-    - _Requirements: 8.5_
-
-- [ ] 9. Implement collaborative approval system
-  - [ ] 9.1 Create collaborative approval API endpoints
-    - Implement `POST /api/v1/contracts/{id}/approvals` endpoint for initiating approval processes
-    - Add `GET /api/v1/contracts/{id}/approvals/{approval-id}` for approval status
-    - Create `POST /api/v1/contracts/{id}/approvals/{approval-id}/respond` for participant responses
-    - Include participant notification system with email integration
-    - Add approval deadline management and reminders
-    - Write unit tests for approval workflow logic
-    - _Requirements: 9.1, 9.2_
-
-  - [ ] 9.2 Add workflow comparison and modification APIs
-    - Implement `GET /api/v1/contracts/{id}/workflow/diff` for visual comparison of changes
-    - Add `POST /api/v1/contracts/{id}/workflow/propose-changes` for modification proposals
-    - Create approval/rejection tracking with detailed feedback via API
-    - Include counter-proposal system through API endpoints
+  - [ ] 7.2 Build collaborative dispute pathway approval system
+    - Implement bilateral approval system for dispute pathways
+    - Add negotiation and modification capabilities
+    - Create approval status tracking and notification system
+    - Implement email integration for approval notifications
+    - Add dispute pathway integration into Smart Cheque configurations
+    - Create automatic fund freezing logic for disputed Smart Cheques
     - Write integration tests for complete approval workflows
-    - _Requirements: 9.2, 9.3, 9.4, 9.5_
+    - _Requirements: 7 (bilateral approval, negotiation, Smart Cheque dispute integration)_
 
-- [ ] 10. Implement Smart Cheque generation service
-  - [ ] 10.1 Create Smart Cheque configuration generation API
-    - Implement `POST /api/v1/contracts/{id}/generate-smart-cheques` endpoint
-    - Generate Smart Cheque configuration data for each milestone
-    - Include amount distribution according to approved percentage allocations
-    - Add verification method mapping compatible with main project's systems
-    - Return structured Smart Cheque configuration data via API
-    - Write unit tests for Smart Cheque configuration generation logic
-    - _Requirements: 10.1, 10.2, 10.3_
+- [ ] 8. Create workflow visualization and editing system
+  - [ ] 8.1 Implement workflow diagram generation service
+    - Create Mermaid flowchart generation from milestone data using milestones from task 5.2
+    - Implement visual representation of milestone sequences and dependencies
+    - Add diagram export capabilities (SVG, PNG, Mermaid syntax)
+    - Create workflow visualization API endpoints
+    - Implement diagram caching and optimization
+    - Add workflow diagram validation and error handling
+    - Write unit tests for diagram generation and API endpoint tests
+    - _Requirements: 8 (workflow visualization, Mermaid diagrams, drag-and-drop interface support)_
 
-  - [ ] 10.2 Add dispute integration configuration API
-    - Implement `GET /api/v1/contracts/{id}/smart-cheques/dispute-config` endpoint
-    - Generate dispute pathway integration configuration for Smart Cheques
-    - Include dispute handling metadata compatible with main project's dispute system
-    - Add fund freezing configuration when disputes arise
-    - Return dispute integration configuration via API
-    - Write integration tests for dispute configuration generation
-    - _Requirements: 10.4, 10.5, 10.6, 10.7_
+  - [ ] 8.2 Build workflow editing and validation service
+    - Implement milestone reordering and condition editing functionality
+    - Add real-time workflow validation with percentage checking
+    - Create dependency validation and cycle detection
+    - Implement workflow change tracking and versioning
+    - Add workflow diff generation and comparison
+    - Create workflow rollback and recovery mechanisms
+    - Write comprehensive unit tests for editing logic and validation rules
+    - _Requirements: 8 (workflow editing, validation, audit trails)_
 
-  - [ ] 10.3 Create Smart Cheque lifecycle tracking API
-    - Implement `GET /api/v1/contracts/{id}/smart-cheques/lifecycle` endpoint
-    - Add Smart Cheque status tracking (created → locked → completed)
-    - Create milestone completion notification endpoints for main project integration
-    - Include automatic payment release trigger configuration
-    - Write API tests for lifecycle tracking functionality
-    - _Requirements: 10.8, 10.9_
+- [ ] 9. Implement collaborative approval and notification system
+  - [ ] 9.1 Create collaborative approval workflow service
+    - Implement approval process initiation and management
+    - Add participant notification system with email integration
+    - Create approval status tracking and deadline management
+    - Implement approval response handling (approve, reject, counter-propose)
+    - Add approval history and audit trail functionality
+    - Create approval reminder and escalation logic
+    - Write unit tests for approval logic and integration tests for email notifications
+    - _Requirements: 9 (collaborative approval, email notifications, bilateral agreement)_
 
-- [ ] 11. Implement comprehensive logging and monitoring
-  - [ ] 11.1 Add contract analysis process logging
-    - Implement detailed logging for all processing steps with timestamps
-    - Add LLM API call logging with request/response data and performance metrics
-    - Create error logging with detailed context and stack traces
-    - Write unit tests for logging functionality
-    - _Requirements: 13.1, 13.2, 13.3_
+  - [ ] 9.2 Build workflow comparison and modification system
+    - Implement visual workflow comparison and diff generation using workflow editing from task 8.2
+    - Add modification proposal system with structured feedback
+    - Create counter-proposal handling and negotiation workflows
+    - Implement approval/rejection tracking with detailed reasoning
+    - Add workflow version management and rollback capabilities
+    - Create notification system for workflow changes
+    - Write integration tests for complete collaborative workflows
+    - _Requirements: 9 (workflow comparison, modification proposals, version management)_
 
-  - [ ] 11.2 Create monitoring and alerting system
-    - Implement confidence score and processing metadata storage
-    - Add performance monitoring and alerting for system issues
-    - Create dashboard for system health and usage analytics
-    - Write integration tests for monitoring and alerting workflows
-    - _Requirements: 13.4, 13.5_
+- [ ] 10. Implement Smart Cheque configuration generation
+  - [ ] 10.1 Create Smart Cheque configuration service
+    - Implement Smart Cheque configuration generation from approved milestones using data from task 5.2
+    - Add amount distribution according to percentage allocations
+    - Create verification method mapping to existing systems
+    - Implement Smart Cheque status management (created, locked, in_progress, completed, disputed)
+    - Add Smart Cheque lifecycle tracking and state transitions
+    - Create Smart Cheque configuration validation and error handling
+    - Write unit tests for configuration generation and state management
+    - _Requirements: 5 (Smart Cheque configuration generation, status management, milestone mapping)_
 
-- [ ] 12. Implement API gateway and client SDK
-  - [ ] 12.1 Create comprehensive API documentation and testing
-    - Generate complete OpenAPI/Swagger documentation for all endpoints
-    - Create API testing suite with Postman collections
-    - Add API versioning strategy and backward compatibility
-    - Implement API rate limiting and throttling
-    - Write comprehensive API integration tests
-    - _Requirements: All requirements - API access_
+  - [ ] 10.2 Build dispute integration for Smart Cheques
+    - Implement dispute pathway integration into Smart Cheque configurations using pathways from task 7
+    - Add automatic dispute handling metadata generation
+    - Create fund freezing configuration for disputed Smart Cheques
+    - Implement dispute status tracking and resolution workflows
+    - Add integration with existing dispute management system
+    - Create automatic state transitions based on dispute outcomes
+    - Write integration tests for dispute handling and resolution workflows
+    - _Requirements: 10 (Smart Cheque dispute integration, fund freezing, automatic state transitions)_
 
-  - [ ] 12.2 Build client SDK for main project integration
-    - Create Go client SDK for easy integration with main Smart Payment Infrastructure
-    - Add authentication and authorization handling in SDK
-    - Include retry logic and error handling in client SDK
+- [ ] 11. Create comprehensive API layer and documentation
+  - [ ] 11.1 Implement complete REST API endpoints
+    - Create all contract management endpoints (upload, analyze, retrieve) using services from tasks 3-5
+    - Implement milestone and workflow management APIs using services from tasks 5, 8
+    - Add risk assessment and compliance checking endpoints using services from task 6
+    - Create dispute pathway and approval management APIs using services from tasks 7, 9
+    - Implement Smart Cheque configuration generation endpoints using services from task 10
+    - Add industry knowledge management APIs using services from task 4
+    - Write comprehensive API integration tests and validation
+    - _Requirements: 15 (REST API endpoints), all functional requirements exposed via APIs_
+
+  - [ ] 11.2 Build API documentation and client SDK
+    - Generate complete OpenAPI/Swagger documentation for all endpoints from task 11.1
+    - Create API testing suite with comprehensive test cases
+    - Implement API versioning strategy and backward compatibility
+    - Build Go client SDK for main project integration
+    - Add SDK authentication and error handling
     - Create SDK documentation and usage examples
-    - Write SDK integration tests and examples
-    - _Requirements: Integration with main project_
+    - Write SDK integration tests and example implementations
+    - _Requirements: 15 (OpenAPI documentation), microservice integration support_
 
-- [ ] 13. Create comprehensive test suite and documentation
-  - [ ] 13.1 Implement end-to-end integration tests
-    - Create complete workflow tests from document upload to Smart Cheque generation
-    - Add multi-party collaboration testing scenarios
+- [ ] 12. Implement monitoring, logging, and observability
+  - [ ] 12.1 Create comprehensive logging and monitoring system
+    - Implement detailed logging for all processing steps with timestamps
+    - Add LLM API call logging with performance metrics using LLM service from task 2.2
+    - Create error logging with context and stack traces
+    - Implement confidence score and metadata storage
+    - Add performance monitoring and alerting for system issues
+    - Create health monitoring dashboard and metrics collection
+    - Write unit tests for logging functionality and monitoring integration
+    - _Requirements: 13 (comprehensive logging, monitoring, error tracking, performance metrics)_
+
+  - [ ] 12.2 Build production monitoring and alerting
+    - Implement Prometheus metrics collection and exposition
+    - Add distributed tracing with OpenTelemetry integration
+    - Create alerting rules for system health and performance
+    - Implement log aggregation and analysis
+    - Add performance profiling and optimization monitoring
+    - Create operational dashboards and reporting
+    - Write integration tests for monitoring and alerting systems
+    - _Requirements: 13 (system reliability monitoring), 14 (observability patterns)_
+
+- [ ] 13. Create comprehensive testing and quality assurance
+  - [ ] 13.1 Implement end-to-end integration testing
+    - Create complete workflow tests from document upload to Smart Cheque generation using all services
+    - Add multi-party collaboration testing scenarios using approval systems from task 9
     - Implement performance tests for large document processing
-    - Write load tests for concurrent user scenarios
-    - _Requirements: All requirements - integration testing_
+    - Create load tests for concurrent user scenarios
+    - Add security testing and vulnerability assessments
+    - Implement chaos engineering tests for resilience validation
+    - Write comprehensive test documentation and maintenance guides
+    - _Requirements: 14 (95%+ test coverage, comprehensive testing), quality assurance_
 
-  - [ ] 13.2 Add user documentation and API guides
-    - Create user guides for contract analysis workflows
-    - Add API documentation with examples and best practices
-    - Implement inline help and tooltips for workflow editor
-    - Write troubleshooting guides and FAQ documentation
-    - _Requirements: User experience and adoption_
-
-- [ ] 14. Deploy microservice and configure production environment
-  - [ ] 14.1 Set up microservice production infrastructure
+  - [ ] 13.2 Build deployment and production readiness
     - Create Docker containers and Kubernetes deployment configurations
-    - Set up independent production database with proper indexing and optimization
-    - Configure external service integrations (LLM APIs, OCR services, web search)
-    - Implement service discovery and load balancing
-    - Set up monitoring and logging infrastructure for microservice
-    - Create deployment pipelines and CI/CD configuration
-    - _Requirements: Production readiness_
-
-  - [ ] 14.2 Validate microservice integration and performance
-    - Conduct production performance testing and optimization for microservice
-    - Validate API integrations with main Smart Payment Infrastructure
-    - Implement production monitoring, alerting, and health checks
-    - Create operational runbooks and maintenance procedures for microservice
-    - Set up backup and disaster recovery for independent service
-    - Write integration guides for main project team
-    - _Requirements: Production stability and maintenance_
+    - Set up CI/CD pipelines with automated testing and deployment
+    - Implement production database setup with optimization and indexing
+    - Configure external service integrations (LLM APIs, OCR, web search) using framework from task 2
+    - Add production monitoring, logging, and alerting infrastructure using systems from task 12
+    - Create operational runbooks and maintenance procedures
+    - Write deployment guides and production troubleshooting documentation
+    - _Requirements: 14 (automated linting, security scanning), 15 (production-ready deployment)_
 
 ## Implementation Notes
 
 ### Development Approach
-- **Clean Architecture**: Strict separation of concerns with dependency inversion
-- **Test-Driven Development**: Write tests before implementing functionality with high coverage requirements
-- **SOLID Principles**: Single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion
+- **Test-Driven Development**: Write tests before implementing functionality, maintain 95%+ coverage
+- **Clean Architecture**: Strict separation of concerns with dependency inversion and SOLID principles
+- **Incremental Development**: Each task builds on previous tasks with working, testable code
 - **Domain-Driven Design**: Rich domain models with clear business logic separation
-- **Incremental Integration**: Each task builds on previous tasks with proper abstraction layers
-- **Code Quality Gates**: Automated linting, formatting, testing, and security scanning
-- **Modular Design**: Loosely coupled components with clear interfaces and contracts
+- **API-First Design**: All functionality exposed through well-defined REST APIs
+- **Microservice Architecture**: Independent service with own database and infrastructure
 
-### Integration Points
-- **API-First Design**: All functionality exposed through REST APIs for main project consumption
-- **Smart Cheque Configuration**: Generate Smart Cheque configuration data via API for main project
-- **Dispute Integration**: Provide dispute pathway configurations compatible with main project's dispute system
-- **Client SDK**: Provide Go SDK for seamless integration with main Smart Payment Infrastructure
-- **Independent Database**: Maintain separate database for contract analysis data
-- **Microservice Architecture**: Deploy as independent service with own infrastructure
-
-### Quality Assurance
+### Code Quality Standards
+- **Comprehensive Testing**: Unit tests, integration tests, and end-to-end tests for all functionality
+- **Static Analysis**: golangci-lint, gosec security scanning, and dependency vulnerability checks
 - **Code Coverage**: Maintain 95%+ test coverage with branch coverage analysis
-- **Static Analysis**: Comprehensive linting with golangci-lint, security scanning with gosec
-- **Code Review**: Mandatory peer review with automated quality checks
-- **Performance Testing**: Benchmarking, profiling, and load testing for all critical paths
-- **Security Testing**: SAST/DAST scanning, dependency vulnerability checks, penetration testing
-- **Documentation**: Comprehensive code documentation, API documentation, and architectural decision records
+- **Documentation**: Comprehensive code documentation, API documentation, and architectural decisions
+- **Performance**: Benchmarking, profiling, and load testing for all critical paths
+- **Security**: Input validation, authentication, authorization, and secure data handling
 
-### Deployment Strategy
-- **Phased Rollout**: Deploy core functionality first, then advanced features
-- **Feature Flags**: Use feature flags for gradual feature enablement
-- **Monitoring**: Comprehensive monitoring from day one of deployment
-- **Rollback Plan**: Ensure ability to rollback changes if issues arise
+### Integration Requirements
+- **Smart Cheque Integration**: Generate configuration data compatible with main project
+- **Dispute System Integration**: Provide dispute pathways compatible with existing infrastructure
+- **External APIs**: Robust integration with LLM APIs, OCR services, and web search
+- **Database Independence**: Separate PostgreSQL database with proper schema design
+- **Client SDK**: Go SDK for seamless integration with Smart Payment Infrastructure
+- **Monitoring Integration**: Comprehensive observability for production operations
