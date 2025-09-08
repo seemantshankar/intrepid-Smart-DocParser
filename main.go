@@ -46,6 +46,7 @@ func main() {
 	// Handlers
 	healthHandler := c.NewHealthHandler()
 	docHandler := c.NewDocumentHandler()
+	analysisHandler := c.NewAnalysisHandler()
 
 	// Health routes
 	r.GET("/health", healthHandler.HealthCheck)
@@ -53,8 +54,12 @@ func main() {
 
 	// Document routes
 	r.POST("/contracts/upload", docHandler.Upload)
+	r.POST("/contracts/upload-analyze", docHandler.UploadAndAnalyze)
 	r.GET("/contracts/:id", docHandler.Get)
 	r.DELETE("/contracts/:id", docHandler.Delete)
+
+	// Analysis routes
+	r.POST("/contracts/analyze", analysisHandler.Analyze)
 
 	// Swagger route with error logging
 	r.GET("/swagger/*any", func(c *gin.Context) {

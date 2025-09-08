@@ -13,6 +13,7 @@ import (
 	"contract-analysis-service/internal/repositories"
 	"contract-analysis-service/internal/repositories/sqlite"
 	"contract-analysis-service/internal/services/document"
+	"contract-analysis-service/internal/services/analysis"
 	"contract-analysis-service/internal/services/knowledge"
 	"contract-analysis-service/internal/services/llm"
 	llmclient "contract-analysis-service/internal/services/llm/client"
@@ -42,6 +43,7 @@ type Container struct {
 	OCRService        ocr.Service
 	DocumentService   document.Service
 	ValidationService validation.Service
+	AnalysisService   analysis.Service
 	KnowledgeService  knowledge.Service
 }
 
@@ -115,7 +117,8 @@ func NewContainer(cfg *configs.Config) *Container {
 	knowledgeRepo := sqlite.NewKnowledgeEntryRepository(db)
 
 	validationService := validation.NewValidationService(llmService, logger)
-	documentService := document.NewDocumentService(logger, fileStorage, contractRepo, validationService)
+	analysisService := analysis.NewService(llmService)
+	documentService := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, ocrService, analysisService)
 	knowledgeService := knowledge.NewKnowledgeService(llmService, logger, knowledgeRepo, redisClient)
 
 	return &Container{
@@ -131,6 +134,7 @@ func NewContainer(cfg *configs.Config) *Container {
 		OCRService:      ocrService,
 		DocumentService:   documentService,
 		ValidationService: validationService,
+		AnalysisService:   analysisService,
 		KnowledgeService:  knowledgeService,
 	}
 }
@@ -143,4 +147,9 @@ func (c *Container) NewHealthHandler() *handlers.HealthHandler {
 // NewDocumentHandler creates a new document handler
 func (c *Container) NewDocumentHandler() *handlers.DocumentHandler {
 	return handlers.NewDocumentHandler(c.DocumentService, c.Logger)
+}
+
+// NewAnalysisHandler creates a new analysis handler
+func (c *Container) NewAnalysisHandler() *handlers.AnalysisHandler {
+	return handlers.NewAnalysisHandler(c.Logger, c.OCRService, c.AnalysisService)
 }

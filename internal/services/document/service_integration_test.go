@@ -12,6 +12,7 @@ import (
 	"contract-analysis-service/internal/pkg/storage"
 	"contract-analysis-service/internal/repositories/sqlite"
 	"contract-analysis-service/internal/services/document"
+	llmclient "contract-analysis-service/internal/services/llm/client"
 	"contract-analysis-service/internal/services/llm"
 	"contract-analysis-service/internal/services/validation"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,7 @@ func TestDocumentService_Integration_Upload_Get_Delete(t *testing.T) {
 	}
 
 	// Load config
-	cfg, err := configs.LoadConfig("../../../../config_test.yaml")
+	cfg, err := configs.LoadConfig("/Users/seemant/Library/Mobile Documents/com~apple~CloudDocs/Documents/Projects/Smart-Cheques Ripple/intrepid-Smart-DocParser/config_test.yaml")
 	require.NoError(t, err, "Failed to load test config")
 
 	// Dependencies
@@ -38,8 +39,9 @@ func TestDocumentService_Integration_Upload_Get_Delete(t *testing.T) {
 
 	// Create services
 	llmService := llm.NewLLMService(logger)
+	llmclient.AddOpenRouterClientToService(llmService, cfg)
 	validationService := validation.NewValidationService(llmService, logger)
-	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService)
+	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, nil)
 
 	// --- Test Upload ---
 	fileContent := "integration test file content"

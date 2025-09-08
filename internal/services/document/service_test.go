@@ -11,6 +11,7 @@ import (
 	"contract-analysis-service/internal/services/document"
 	validation_mocks "contract-analysis-service/internal/services/validation/mocks"
 	storage_mocks "contract-analysis-service/internal/pkg/storage/mocks"
+	ocrsvc "contract-analysis-service/internal/services/ocr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -21,8 +22,9 @@ func TestDocumentService_Upload(t *testing.T) {
 	storageMock := new(storage_mocks.FileStorage)
 	contractRepoMock := new(repo_mocks.ContractRepository)
 	validationMock := new(validation_mocks.Service)
+	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
 
 	fileContent := "this is a test file"
 	fileHeader := &multipart.FileHeader{
@@ -41,6 +43,7 @@ func TestDocumentService_Upload(t *testing.T) {
 	storageMock.AssertExpectations(t)
 	contractRepoMock.AssertExpectations(t)
 	validationMock.AssertExpectations(t)
+	ocrMock.AssertExpectations(t)
 }
 
 func TestDocumentService_GetByID(t *testing.T) {
@@ -48,8 +51,9 @@ func TestDocumentService_GetByID(t *testing.T) {
 	storageMock := new(storage_mocks.FileStorage)
 	contractRepoMock := new(repo_mocks.ContractRepository)
 	validationMock := new(validation_mocks.Service)
+	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
 
 	expectedContract := &models.Contract{ID: "test-id"}
 	contractRepoMock.On("GetByID", "test-id").Return(expectedContract, nil)
@@ -59,6 +63,7 @@ func TestDocumentService_GetByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContract, contract)
 	contractRepoMock.AssertExpectations(t)
+	ocrMock.AssertExpectations(t)
 }
 
 func TestDocumentService_Delete(t *testing.T) {
@@ -66,8 +71,9 @@ func TestDocumentService_Delete(t *testing.T) {
 	storageMock := new(storage_mocks.FileStorage)
 	contractRepoMock := new(repo_mocks.ContractRepository)
 	validationMock := new(validation_mocks.Service)
+	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
 
 	contract := &models.Contract{ID: "test-id", FilePath: "/path/to/file.txt"}
 
@@ -80,4 +86,5 @@ func TestDocumentService_Delete(t *testing.T) {
 	assert.NoError(t, err)
 	storageMock.AssertExpectations(t)
 	contractRepoMock.AssertExpectations(t)
+	ocrMock.AssertExpectations(t)
 }

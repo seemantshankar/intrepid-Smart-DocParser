@@ -27,6 +27,7 @@ CONTRACT TEXT:
 
 INSTRUCTIONS:
 1. Extract the buyer name and seller name
+2. Extract the full mailing address of both buyer and seller, including country
 2. Identify the total contract value and currency
 3. List all payment obligations with amounts, percentages, and trigger conditions
 4. Identify any risk factors or concerns
@@ -35,7 +36,11 @@ INSTRUCTIONS:
 Return a JSON object with this structure:
 {
   "buyer": "string",
+  "buyer_address": "string",
+  "buyer_country": "string",
   "seller": "string", 
+  "seller_address": "string",
+  "seller_country": "string",
   "total_value": number,
   "currency": "string",
   "milestones": [

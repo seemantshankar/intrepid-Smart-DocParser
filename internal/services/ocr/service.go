@@ -97,13 +97,13 @@ func (s *ocrService) tryExtractWithModel(ctx context.Context, model, imageURL st
 			map[string]interface{}{
 				"role": "user",
 				"content": []interface{}{
-					map[string]interface{}{"type": "text", "text": "Extract only the stock names that are in bold from this image. List them in a comma-separated format. Respond with a JSON object containing two keys: 'text' for the extracted stock names, and 'confidence' (a float between 0.0 and 1.0) for your confidence in the extraction accuracy."},
+					map[string]interface{}{"type": "text", "text": "Extract the full readable text from this page image. Respond ONLY as a JSON object with keys: 'text' (string with extracted text) and 'confidence' (float 0.0-1.0 indicating extraction confidence)."},
 					map[string]interface{}{"type": "image_url", "image_url": map[string]string{"url": imageURL}},
 				},
 			},
 		},
 		"response_format": map[string]string{"type": "json_object"},
-		"stream":          true,
+		"stream":          false,
 	}
 
 	// Marshal JSON payload
@@ -124,7 +124,7 @@ func (s *ocrService) tryExtractWithModel(ctx context.Context, model, imageURL st
 			"User-Agent":    "Smart-DocParser/1.0",
 		},
 		Body:        payloadBytes,
-		IsStreaming: true,
+		IsStreaming: false,
 	})
 	if err != nil {
 		s.metrics.ErrorsTotal.WithLabelValues(model).Inc()
@@ -137,9 +137,24 @@ func (s *ocrService) tryExtractWithModel(ctx context.Context, model, imageURL st
 
 // parseOCRResponse extracts text from OCR API response
 func parseOCRResponse(body []byte) (*OCRResult, error) {
+	// OpenRouter chat completion response with response_format json_object returns
+	// a JSON string in choices[0].message.content that contains our OCRResult fields
+	var wrapper struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(body, &wrapper); err != nil {
+		return nil, fmt.Errorf("failed to parse OCR wrapper: %w", err)
+	}
+	if len(wrapper.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in OCR response")
+	}
 	var result OCRResult
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse OCR result: %w", err)
+	if err := json.Unmarshal([]byte(wrapper.Choices[0].Message.Content), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse OCR content: %w", err)
 	}
 	return &result, nil
 }

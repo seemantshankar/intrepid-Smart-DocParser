@@ -24,7 +24,11 @@ type Contract struct {
 
 type ContractSummary struct {
 	BuyerName    string `json:"buyer_name"`
+	BuyerAddress string `json:"buyer_address"`
+	BuyerCountry string `json:"buyer_country"`
 	SellerName   string `json:"seller_name"`
+	SellerAddress string `json:"seller_address"`
+	SellerCountry string `json:"seller_country"`
 	GoodsNature  string `json:"goods_nature"`
 	TotalValue   decimal.Decimal `json:"total_value" gorm:"type:decimal(20,8)"`
 	Currency     string `json:"currency"`
@@ -138,7 +142,11 @@ const (
 // This is a DTO used for parsing the raw LLM output.
 type ContractAnalysis struct {
 	Buyer         string              `json:"buyer"`
+	BuyerAddress  string              `json:"buyer_address"`
+	BuyerCountry  string              `json:"buyer_country"`
 	Seller        string              `json:"seller"`
+	SellerAddress string              `json:"seller_address"`
+	SellerCountry string              `json:"seller_country"`
 	TotalValue    decimal.Decimal     `json:"total_value"`
 	Currency      string              `json:"currency"`
 	Milestones    []AnalysisMilestone `json:"milestones"`

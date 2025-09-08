@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"contract-analysis-service/internal/models"
 	"contract-analysis-service/internal/pkg/external"
@@ -74,7 +75,12 @@ func buildValidationPrompt(documentText string) string {
 }
 
 func parseValidationResponse(body []byte) (*models.ValidationResult, error) {
-	var response struct {
+	// Log the response body for debugging
+	log.Printf("LLM Response Body: %s", string(body))
+
+	// OpenRouter chat completion response with response_format json_object returns
+	// a JSON string in choices[0].message.content that contains our ValidationResult fields
+	var wrapper struct {
 		Choices []struct {
 			Message struct {
 				Content string `json:"content"`
@@ -82,16 +88,16 @@ func parseValidationResponse(body []byte) (*models.ValidationResult, error) {
 		} `json:"choices"`
 	}
 
-	if err := json.Unmarshal(body, &response); err != nil {
+	if err := json.Unmarshal(body, &wrapper); err != nil {
 		return nil, fmt.Errorf("failed to parse validation response: %w", err)
 	}
 
-	if len(response.Choices) == 0 {
+	if len(wrapper.Choices) == 0 {
 		return nil, fmt.Errorf("no choices in validation response")
 	}
 
 	var result models.ValidationResult
-	if err := json.Unmarshal([]byte(response.Choices[0].Message.Content), &result); err != nil {
+	if err := json.Unmarshal([]byte(wrapper.Choices[0].Message.Content), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse validation result from content: %w", err)
 	}
 

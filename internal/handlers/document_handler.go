@@ -14,6 +14,45 @@ type DocumentHandler struct {
 	logger  *zap.Logger
 }
 
+// UploadAndAnalyze handles the upload + analyze endpoint.
+// @Summary Upload and analyze a contract in one step
+// @Description Uploads a document, securely stores it, performs one-step multimodal analysis for scanned PDFs, and returns the stored document_id along with structured analysis JSON.
+// @Tags Documents
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "The document to upload and analyze"
+// @Success 201 {object} map[string]interface{} "Returns document_id and analysis JSON"
+// @Failure 400 {object} map[string]string "Bad request if the file is missing, invalid, or too large"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /contracts/upload-analyze [post]
+func (h *DocumentHandler) UploadAndAnalyze(c *gin.Context) {
+    fileHeader, err := c.FormFile("file")
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+        return
+    }
+
+    file, err := fileHeader.Open()
+    if err != nil {
+        h.logger.Error("Failed to open uploaded file", zap.Error(err))
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open file"})
+        return
+    }
+    defer file.Close()
+
+    documentID, analysis, err := h.service.UploadAndAnalyze(c.Request.Context(), file, fileHeader)
+    if err != nil {
+        h.logger.Error("Failed to upload and analyze document", zap.Error(err))
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "document_id": documentID,
+        "analysis":    analysis,
+    })
+}
+
 // NewDocumentHandler creates a new DocumentHandler.
 func NewDocumentHandler(service document.Service, logger *zap.Logger) *DocumentHandler {
 	return &DocumentHandler{
