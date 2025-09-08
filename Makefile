@@ -2,7 +2,7 @@
 
 # Build the application
 build:
-	go build -o bin/server ./cmd/server/main.go
+	go build -o bin/server main.go
 
 # Run tests
 test:
@@ -26,5 +26,6 @@ dev-deps:
 swagger:
 	swag init -g cmd/server/main.go -o ./api/swagger
 
-# Run the application	run:
+# Run the application
+run:
 	go run cmd/server/main.go

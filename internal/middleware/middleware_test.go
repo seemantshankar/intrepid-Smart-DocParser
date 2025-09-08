@@ -17,7 +17,7 @@ import (
 	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"go.uber.org/zap"
 
-	"contract-analysis-service/internal/middleware"
+	mw "contract-analysis-service/internal/middleware"
 )
 
 func TestRecovery(t *testing.T) {
@@ -78,7 +78,7 @@ func TestCORS(t *testing.T) {
 		c.Request = r
 
 		// Create middleware instance with a test logger
-		mw := middleware.NewMiddleware(zap.NewNop())
+		mw := mw.NewMiddleware(zap.NewNop())
 		
 		// Apply CORS middleware
 		handler := mw.CORS()
@@ -206,7 +206,7 @@ func TestRequestID(t *testing.T) {
 	logger := zap.NewNop()
 
 	// Create middleware instance
-	mw := middleware.NewMiddleware(logger)
+	mw := mw.NewMiddleware(logger)
 
 	// Apply request ID middleware
 	router.Use(mw.RequestID())

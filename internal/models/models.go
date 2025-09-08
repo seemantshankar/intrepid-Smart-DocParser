@@ -39,7 +39,7 @@ type Milestone struct {
 	Percentage     float64           `json:"percentage"`
 	Trigger        string            `json:"trigger_condition"`
 	SequenceOrder  int               `json:"sequence_order"`
-	Dependencies   []string          `json:"dependencies" gorm:"type:text[]"`
+	Dependencies   []string          `json:"dependencies" gorm:"type:text;serializer:json"`
 	Category       string            `json:"category"`
 	Verification   VerificationMethod `json:"verification_method" gorm:"type:varchar(50)"`
 	OracleConfig   *OracleConfig     `json:"oracle_config,omitempty" gorm:"embedded"`
@@ -79,8 +79,8 @@ const (
 )
 
 type ComplianceReport struct {
-	MissingClauses []string `json:"missing_clauses" gorm:"type:text[]"`
-	Suggestions    []string `json:"suggestions" gorm:"type:text[]"`
+	MissingClauses []string `json:"missing_clauses" gorm:"type:text;serializer:json"`
+	Suggestions    []string `json:"suggestions" gorm:"type:text;serializer:json"`
 	IsCompliant    bool     `json:"is_compliant"`
 	Report         string   `json:"report" gorm:"type:text"`
 }
@@ -113,7 +113,7 @@ type DisputePath struct {
 	Method     string   `json:"method"`
 	Priority   string   `json:"priority"`
 	Category   string   `json:"category"`
-	Transitions []string `json:"state_transitions" gorm:"type:text[]"`
+	Transitions []string `json:"state_transitions" gorm:"type:text;serializer:json"`
 }
 
 type KnowledgeEntry struct {
@@ -205,6 +205,6 @@ type ValidationResult struct {
 	Reason           string   `json:"reason,omitempty"`
 	Confidence       float64  `json:"confidence"`
 	ContractType     string   `json:"contract_type,omitempty"`
-	MissingElements  []string `json:"missing_elements,omitempty"`
-	DetectedElements []string `json:"detected_elements,omitempty"`
+	MissingElements  []string `json:"missing_elements,omitempty" gorm:"type:text;serializer:json"`
+	DetectedElements []string `json:"detected_elements,omitempty" gorm:"type:text;serializer:json"`
 }

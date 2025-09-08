@@ -108,6 +108,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	// Override config with environment variables if they exist
 	if apiKey := os.Getenv("OPENROUTER_API_KEY"); apiKey != "" {
 		cfg.OCR.APIKey = apiKey
+		cfg.LLM.OpenRouter.APIKey = apiKey
 	}
 	
 	return &cfg, nil
