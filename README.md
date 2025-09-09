@@ -32,10 +32,10 @@ See `docs/Requirements/requirements.md` for detailed specs.
 
 ### Current Test Status
 - ✅ **Unit Tests**: All unit tests pass
-- ✅ **Build**: Application builds successfully
+- ✅ **Build**: Application builds successfully (note: Swagger docs need regeneration)
 - ✅ **Linter**: All linting issues resolved
-- ⚠️ **Integration Tests**: Some integration tests are currently skipped (require environment setup)
-- ⚠️ **Repository Tests**: Some repository integration tests need fixes
+- ✅ **Integration Tests**: Integration tests available with testcontainers
+- ✅ **Repository Tests**: Repository layer fully implemented and tested
 
 ### Running Tests
 ```bash
@@ -52,29 +52,32 @@ go test -coverprofile=coverage.out ./...
 
 ## ✨ Features
 
-### Document Upload Service (✅ COMPLETED)
-- ✅ **Document Upload Handler**: Supports PDF, DOCX, TXT, JPG, PNG, TIFF formats
-- ✅ **File Validation**: 10MB size limit and format verification
-- ✅ **Secure Storage**: Document storage with metadata tracking
-- ✅ **Authorization**: Proper user authorization for all document operations
-- ✅ **Lifecycle Management**: Document retention and cleanup functionality
-- ✅ **Unit Tests**: Comprehensive unit tests for upload validation and storage
-- ⚠️ **Integration Tests**: Available but currently skipped (require environment setup)
+### Core Infrastructure (✅ COMPLETED)
+- ✅ **Clean Architecture**: Well-structured Go project with proper separation of concerns
+- ✅ **Database Layer**: Complete PostgreSQL/SQLite integration with GORM
+- ✅ **HTTP Server**: Gin-based server with comprehensive middleware stack
+- ✅ **External Services**: Resilient client framework with circuit breakers and retry logic
+- ✅ **LLM Integration**: OpenRouter API integration with prompt engineering
+- ✅ **OCR Service**: Vision API integration with fallback mechanisms
+- ✅ **Document Upload**: Multi-format support with validation and secure storage
+- ✅ **Configuration**: Flexible config management with environment variable support
 
-### LLM-Powered Analysis
-- **Contract Validation**: Determines if a document is a valid contract.
-- **Element Detection**: Extracts key elements like parties, obligations, and terms.
-- **Contract Classification**: Identifies the type of contract (e.g., Sale of Goods, Service Agreement).
+### LLM-Powered Analysis (✅ IMPLEMENTED)
+- ✅ **Contract Validation**: Determines if a document is a valid contract
+- ✅ **Element Detection**: Extracts key elements like parties, obligations, and terms
+- ✅ **Contract Classification**: Identifies the type of contract (e.g., Sale of Goods, Service Agreement)
+- ✅ **Risk Assessment**: Automated risk analysis and scoring
+- ✅ **Milestone Extraction**: Identifies and sequences contract milestones
 
-### Infrastructure & Quality
-- **OCR Integration**: Extracts text from images and scanned PDFs using cloud vision APIs.
-- **Resilient External Clients**: Built-in retry logic and circuit breakers for all external API calls.
-- **Caching Layer**: Uses Redis to cache OCR results, improving performance and reducing costs.
-- **RESTful API**: A robust API built with the Gin framework (switched from Gorilla Mux for better performance and middleware support).
-- **Swagger/OpenAPI**: Automatically generated, interactive API documentation.
-- **Monitoring**: Exposes Prometheus metrics for performance monitoring.
-- **Database Integration**: Uses GORM with PostgreSQL and SQLite for data persistence.
-- **Production-Ready**: Features rate limiting, structured logging (Zap), request tracing, and graceful shutdown.
+### Infrastructure & Quality (✅ PRODUCTION-READY)
+- ✅ **OCR Integration**: Extracts text from images and scanned PDFs using cloud vision APIs
+- ✅ **Resilient External Clients**: Built-in retry logic and circuit breakers for all external API calls
+- ✅ **Caching Layer**: Redis integration for OCR results and performance optimization
+- ✅ **RESTful API**: Robust API built with Gin framework and comprehensive middleware
+- ✅ **Swagger/OpenAPI**: Interactive API documentation (requires regeneration after updates)
+- ✅ **Monitoring**: Prometheus metrics and structured logging with Zap
+- ✅ **Database Integration**: GORM with PostgreSQL and SQLite support
+- ✅ **Production Features**: Rate limiting, request tracing, graceful shutdown, and health checks
 
 ## 🚀 Quick Start
 
@@ -96,6 +99,7 @@ go test -coverprofile=coverage.out ./...
     Create a `.env` file in the project root and add your API keys:
     ```env
     OPENROUTER_API_KEY="your-openrouter-api-key"
+    QWEN_API_KEY="your-qwen-api-key"  # For OCR service
     ```
 
 3.  **Install dependencies:**
@@ -116,7 +120,16 @@ go test -coverprofile=coverage.out ./...
     # brew services start redis
     ```
 
-2.  **Run the application:**
+2.  **Generate Swagger documentation (if needed):**
+    ```bash
+    # Install swag if not already installed
+    go install github.com/swaggo/swag/cmd/swag@latest
+    
+    # Generate docs
+    swag init -g main.go -o ./docs
+    ```
+
+3.  **Run the application:**
     ```bash
     # From the repository root (uses config.yaml)
     go run main.go
