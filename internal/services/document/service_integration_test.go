@@ -41,7 +41,7 @@ func TestDocumentService_Integration_Upload_Get_Delete(t *testing.T) {
 	llmService := llm.NewLLMService(logger)
 	llmclient.AddOpenRouterClientToService(llmService, cfg)
 	validationService := validation.NewValidationService(llmService, logger)
-	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, nil)
+	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, nil, nil)
 
 	// --- Test Upload ---
 	fileContent := "integration test file content"

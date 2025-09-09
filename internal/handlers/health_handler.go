@@ -4,17 +4,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"gorm.io/gorm"
+	"context"
+	"time"
+	"github.com/go-redis/redis/v8"
 )
 
 // HealthHandler handles health check endpoints
 type HealthHandler struct {
-	DB *gorm.DB
+	DB    *gorm.DB
+	Redis *redis.Client
 }
 
 // NewHealthHandler creates a new health handler
-func NewHealthHandler(db *gorm.DB) *HealthHandler {
+func NewHealthHandler(db *gorm.DB, redis *redis.Client) *HealthHandler {
 	return &HealthHandler{
-		DB: db,
+		DB:    db,
+		Redis: redis,
 	}
 }
 
@@ -50,8 +55,6 @@ type ReadinessResponse struct {
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} ReadinessResponse
-// @Failure 503 {object} ReadinessResponse
 // @Success 200 {object} HealthResponse
 // @Failure 503 {object} HealthResponse
 // @Router /ready [get]
@@ -69,6 +72,20 @@ func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 		status = http.StatusServiceUnavailable
 	} else {
 		details["database"] = "ok"
+	}
+
+	// Check Redis connection if configured
+	if h.Redis != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := h.Redis.Ping(ctx).Err(); err != nil {
+			details["redis"] = "unhealthy: " + err.Error()
+			status = http.StatusServiceUnavailable
+		} else {
+			details["redis"] = "ok"
+		}
+	} else {
+		details["redis"] = "not_configured"
 	}
 
 	response := HealthResponse{

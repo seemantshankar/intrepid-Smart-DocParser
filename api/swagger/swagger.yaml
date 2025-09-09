@@ -8,15 +8,6 @@ definitions:
       status:
         type: string
     type: object
-  handlers.ReadinessResponse:
-    properties:
-      database:
-        example: ok
-        type: string
-      status:
-        example: ready
-        type: string
-    type: object
   models.ComplianceReport:
     properties:
       is_compliant:
@@ -77,6 +68,10 @@ definitions:
     - Analyzed
   models.ContractSummary:
     properties:
+      buyer_address:
+        type: string
+      buyer_country:
+        type: string
       buyer_name:
         type: string
       currency:
@@ -84,6 +79,10 @@ definitions:
       goods_nature:
         type: string
       jurisdiction:
+        type: string
+      seller_address:
+        type: string
+      seller_country:
         type: string
       seller_name:
         type: string
@@ -317,6 +316,42 @@ paths:
               type: string
             type: object
       summary: Upload a document for analysis
+      tags:
+      - Documents
+  /contracts/upload-analyze:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a document, securely stores it, performs one-step multimodal
+        analysis for scanned PDFs, and returns the stored document_id along with structured
+        analysis JSON.
+      parameters:
+      - description: The document to upload and analyze
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Returns document_id and analysis JSON
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request if the file is missing, invalid, or too large
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload and analyze a contract in one step
       tags:
       - Documents
   /health:

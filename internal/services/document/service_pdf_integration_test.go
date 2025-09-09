@@ -100,7 +100,7 @@ func TestDocumentService_Integration_Upload_PDF_Rasterization(t *testing.T) {
 		mock.Anything, 
 		mock.AnythingOfType("string")).Return(&ocrsvc.OCRResult{Text: "mock ocr text", Confidence: 0.9}, nil).Maybe()
 
-	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, ocrMock)
+	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, ocrMock, nil)
 
 	// Open the PDF and build a file header
 	f, err := os.Open(pdfPath)

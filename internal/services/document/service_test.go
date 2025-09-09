@@ -24,7 +24,7 @@ func TestDocumentService_Upload(t *testing.T) {
 	validationMock := new(validation_mocks.Service)
 	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock, nil)
 
 	fileContent := "this is a test file"
 	fileHeader := &multipart.FileHeader{
@@ -53,7 +53,7 @@ func TestDocumentService_GetByID(t *testing.T) {
 	validationMock := new(validation_mocks.Service)
 	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock, nil)
 
 	expectedContract := &models.Contract{ID: "test-id"}
 	contractRepoMock.On("GetByID", "test-id").Return(expectedContract, nil)
@@ -73,7 +73,7 @@ func TestDocumentService_Delete(t *testing.T) {
 	validationMock := new(validation_mocks.Service)
 	ocrMock := new(ocrsvc.MockOCRService)
 
-	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock)
+	service := document.NewDocumentService(logger, storageMock, contractRepoMock, validationMock, ocrMock, nil)
 
 	contract := &models.Contract{ID: "test-id", FilePath: "/path/to/file.txt"}
 

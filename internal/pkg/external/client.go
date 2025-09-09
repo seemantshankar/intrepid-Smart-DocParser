@@ -84,7 +84,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, req *Request) (*Respons
 	var err error
 
 	// Wrap with circuit breaker
-	_, cbErr := c.CB.Execute(func() (interface{}, error) {
+	result, cbErr := c.CB.Execute(func() (interface{}, error) {
 		// Wrap with retry logic
 		retryErr := backoff.Retry(func() error {
 			resp, err = c.doActualRequest(ctx, req)
@@ -106,6 +106,12 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, req *Request) (*Respons
 
 	if cbErr != nil {
 		return nil, cbErr
+	}
+	// If the circuit breaker returned a value directly (e.g., in tests), prefer it
+	if result != nil {
+		if r, ok := result.(*Response); ok && r != nil {
+			return r, nil
+		}
 	}
 	return resp, nil
 }

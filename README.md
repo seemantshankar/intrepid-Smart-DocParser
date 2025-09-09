@@ -52,14 +52,20 @@ A high-performance, production-ready microservice built with Go that automates t
 
 ### Running the Service
 
-1.  **Start the infrastructure (PostgreSQL & Redis):**
+1.  **Start Redis (required for readiness and OCR caching):**
     ```bash
-    docker-compose up -d
+    # Option A: Docker
+    docker run --name redis -p 6379:6379 -d redis:7-alpine
+
+    # Option B: macOS Homebrew
+    # brew install redis
+    # brew services start redis
     ```
 
 2.  **Run the application:**
     ```bash
-    make run
+    # From the repository root (uses config.yaml)
+    go run main.go
     ```
 
 The service will be available at `http://localhost:9091`.
@@ -68,6 +74,36 @@ The service will be available at `http://localhost:9091`.
 
 Interactive API documentation is available at:
 - **Swagger UI**: `http://localhost:9091/swagger/index.html`
+- **Raw OpenAPI JSON**: `http://localhost:9091/swagger/doc.json`
+
+If you update handler annotations and need to regenerate the spec:
+
+```bash
+# Install if needed
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# Generate docs targeting the current entry point
+swag init -g main.go -o ./api/swagger
+```
+
+## 🩺 Health and Readiness
+
+- Liveness: `GET /health` → returns `{"status":"healthy"}` with HTTP 200.
+- Readiness: `GET /ready` → validates dependencies and returns cumulative status.
+
+Example successful readiness response:
+
+```json
+{
+  "status": "ready",
+  "details": {
+    "database": "ok",
+    "redis": "ok"
+  }
+}
+```
+
+If a dependency is unavailable, `/ready` returns HTTP 503 with details (e.g., `redis: unhealthy: <error>`).
 
 ## 🛠 Development
 
@@ -77,8 +113,8 @@ Interactive API documentation is available at:
 # Run all unit tests
 make test
 
-# Run integration tests (requires Docker and .env file)
-make test-integration
+# Run repository integration tests (requires Docker; Postgres via testcontainers)
+go test -tags repo_integration ./internal/repository/...
 ```
 
 ### Code Quality
@@ -91,13 +127,20 @@ go fmt ./...
 make lint
 ```
 
+### Build
+
+```bash
+# Build the server binary
+make build
+# or
+go build -o bin/server main.go
+```
+
 ## 🏗 Project Structure
 
 ```
 .
 ├── api/              # OpenAPI/Swagger specifications
-├── cmd/              # Main application entry points
-│   └── server/       # The main server application
 ├── configs/          # Configuration structs and loading logic
 ├── docs/             # Project documentation
 ├── internal/         # Private application code
@@ -110,6 +153,17 @@ make lint
 ├── vendor/           # Go module dependencies
 └── ...
 ```
+
+## ⚙️ Configuration
+
+Configuration is loaded from `config.yaml` and environment variables.
+
+- `server.port`: HTTP port (default configured: `9091`)
+- `database`: DB dialect/name; defaults to SQLite `./local.db` for local dev
+- `redis.address`: Redis endpoint (default `localhost:6379`)
+- `llm.openrouter`: External LLM settings; `OPENROUTER_API_KEY` can be provided via env
+
+Example: `configs/config.go` and `config.yaml` define the supported fields.
 
 ## 🤝 Contributing
 

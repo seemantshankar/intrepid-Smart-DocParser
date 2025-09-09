@@ -120,6 +120,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/contracts/upload-analyze": {
+            "post": {
+                "description": "Uploads a document, securely stores it, performs one-step multimodal analysis for scanned PDFs, and returns the stored document_id along with structured analysis JSON.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Upload and analyze a contract in one step",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "The document to upload and analyze",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Returns document_id and analysis JSON",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request if the file is missing, invalid, or too large",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/contracts/{id}": {
             "get": {
                 "description": "Get a single document's metadata by its unique ID.",
@@ -277,19 +328,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.ReadinessResponse": {
-            "type": "object",
-            "properties": {
-                "database": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "ready"
-                }
-            }
-        },
         "models.ComplianceReport": {
             "type": "object",
             "properties": {
@@ -380,6 +418,12 @@ const docTemplate = `{
         "models.ContractSummary": {
             "type": "object",
             "properties": {
+                "buyer_address": {
+                    "type": "string"
+                },
+                "buyer_country": {
+                    "type": "string"
+                },
                 "buyer_name": {
                     "type": "string"
                 },
@@ -390,6 +434,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "jurisdiction": {
+                    "type": "string"
+                },
+                "seller_address": {
+                    "type": "string"
+                },
+                "seller_country": {
                     "type": "string"
                 },
                 "seller_name": {

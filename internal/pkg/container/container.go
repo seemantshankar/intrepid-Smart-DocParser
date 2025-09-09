@@ -141,7 +141,7 @@ func NewContainer(cfg *configs.Config) *Container {
 
 // NewHealthHandler creates a new health check handler
 func (c *Container) NewHealthHandler() *handlers.HealthHandler {
-	return handlers.NewHealthHandler(c.DB)
+	return handlers.NewHealthHandler(c.DB, c.RedisClient)
 }
 
 // NewDocumentHandler creates a new document handler
