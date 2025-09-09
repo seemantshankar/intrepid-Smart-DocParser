@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -183,7 +183,7 @@ func (c *HTTPClient) doActualRequest(ctx context.Context, req *Request) (*Respon
 		body = []byte(accumulatedContent.String())
 	} else {
 		// Handle regular response
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)
 		}

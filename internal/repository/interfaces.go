@@ -20,6 +20,7 @@ type Repository[T any] interface {
 type ContractRepository interface {
 	Repository[Contract]
 	GetByStatus(ctx context.Context, status string, limit, offset int) ([]*Contract, error)
+	GetByTitle(ctx context.Context, title string) (*Contract, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error
 }
 
@@ -72,13 +73,4 @@ type RiskAssessment struct {
 	Description string   `json:"description"`
 	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"`
-}
-
-type KnowledgeEntry struct {
-	ID        uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Title     string    `json:"title" gorm:"not null"`
-	Content   string    `json:"content" gorm:"not null"`
-	Tags      []string  `json:"tags" gorm:"type:text[]"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

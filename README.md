@@ -1,22 +1,76 @@
-# Contract Analysis and Milestone Extraction Service
+# Smart-DocParser
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/contract-analysis-service)](https://goreportcard.com/report/github.com/yourusername/contract-analysis-service)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Reference](https://pkg.go.dev/badge/github.com/yourusername/contract-analysis-service.svg)](https://pkg.go.dev/github.com/yourusername/contract-analysis-service)
+Smart-DocParser is a Go-based document analysis system that leverages Large Language Models (LLMs) for contract parsing and extraction of key information such as obligations, payments, and milestones.
 
-A high-performance, production-ready microservice built with Go that automates the analysis of uploaded contracts. It leverages external LLMs to extract key information, validate contract integrity, and identify payment milestones. The service is designed with a clean architecture, ensuring maintainability and scalability.
+## Features
+- **Document Upload and Analysis**: Upload PDFs or other files via REST API, rasterize PDFs to images for multimodal LLM analysis, with fallback to text-based extraction.
+- **LLM Integration**: Supports OpenAI (GPT-4o) and other providers for contract analysis, including prompt engineering for structured JSON responses.
+- **Analysis Endpoint**: POST `/contracts/analyze` handles file processing, OCR if needed, and returns structured results with contract details, risks, and milestones.
+- **Document Management**: CRUD operations for documents with analysis retrieval.
+- **Security**: JWT-based authorization for endpoints.
+
+## Architecture
+- **Handlers**: `analysis_handler.go` for analysis, `document_handler.go` for document operations.
+- **Services**: LLM service in `internal/services/llm/` for contract analysis, milestone sequencing.
+- **Models**: DTOs for contract analysis, risks, milestones in `internal/models/`.
+- **Database**: PostgreSQL/SQLite repositories for persistence.
+
+## Setup
+1. Install dependencies: `go mod tidy`
+2. Configure `.env` or `config.yaml` with LLM API keys.
+3. Run: `go run main.go`
+
+## API Endpoints
+- `POST /contracts/analyze`: Analyze uploaded contract file.
+- `POST /documents/upload`: Upload document.
+- `GET /documents/{id}/analysis`: Retrieve analysis results.
+
+## Requirements
+See `docs/Requirements/requirements.md` for detailed specs.
+
+## Testing
+
+### Current Test Status
+- ✅ **Unit Tests**: All unit tests pass
+- ✅ **Build**: Application builds successfully
+- ✅ **Linter**: All linting issues resolved
+- ⚠️ **Integration Tests**: Some integration tests are currently skipped (require environment setup)
+- ⚠️ **Repository Tests**: Some repository integration tests need fixes
+
+### Running Tests
+```bash
+# Run all unit tests
+make test
+
+# Run specific test suites
+go test ./internal/services/document/... -v
+go test ./internal/handlers/... -v
+
+# Run with coverage
+go test -coverprofile=coverage.out ./...
+```
 
 ## ✨ Features
 
-- **Document Upload**: Supports various formats (PDF, DOCX, TXT, JPG, PNG, TIFF) with validation for file size and type.
-- **LLM-Powered Analysis**: Integrates with external LLM providers (e.g., OpenRouter) for:
-  - **Contract Validation**: Determines if a document is a valid contract.
-  - **Element Detection**: Extracts key elements like parties, obligations, and terms.
-  - **Contract Classification**: Identifies the type of contract (e.g., Sale of Goods, Service Agreement).
+### Document Upload Service (✅ COMPLETED)
+- ✅ **Document Upload Handler**: Supports PDF, DOCX, TXT, JPG, PNG, TIFF formats
+- ✅ **File Validation**: 10MB size limit and format verification
+- ✅ **Secure Storage**: Document storage with metadata tracking
+- ✅ **Authorization**: Proper user authorization for all document operations
+- ✅ **Lifecycle Management**: Document retention and cleanup functionality
+- ✅ **Unit Tests**: Comprehensive unit tests for upload validation and storage
+- ⚠️ **Integration Tests**: Available but currently skipped (require environment setup)
+
+### LLM-Powered Analysis
+- **Contract Validation**: Determines if a document is a valid contract.
+- **Element Detection**: Extracts key elements like parties, obligations, and terms.
+- **Contract Classification**: Identifies the type of contract (e.g., Sale of Goods, Service Agreement).
+
+### Infrastructure & Quality
 - **OCR Integration**: Extracts text from images and scanned PDFs using cloud vision APIs.
 - **Resilient External Clients**: Built-in retry logic and circuit breakers for all external API calls.
 - **Caching Layer**: Uses Redis to cache OCR results, improving performance and reducing costs.
-- **RESTful API**: A robust API built with the Gin framework.
+- **RESTful API**: A robust API built with the Gin framework (switched from Gorilla Mux for better performance and middleware support).
 - **Swagger/OpenAPI**: Automatically generated, interactive API documentation.
 - **Monitoring**: Exposes Prometheus metrics for performance monitoring.
 - **Database Integration**: Uses GORM with PostgreSQL and SQLite for data persistence.

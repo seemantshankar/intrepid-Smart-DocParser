@@ -35,8 +35,11 @@ type Container struct {
 	OCRTMetrics *metrics.OCRMetrics
 
 	// Repositories
-	ContractRepo  repositories.ContractRepository
-	KnowledgeRepo repositories.KnowledgeEntryRepository
+	ContractRepo       repositories.ContractRepository
+	KnowledgeRepo      repositories.KnowledgeEntryRepository
+	ValidationRepo     repositories.ValidationRepository
+	ValidationAuditRepo repositories.ValidationAuditRepository
+	ValidationFeedbackRepo repositories.ValidationFeedbackRepository
 
 	// Services
 	LLMService        llm.Service
@@ -115,27 +118,33 @@ func NewContainer(cfg *configs.Config) *Container {
 	// Initialize repositories
 	contractRepo := sqlite.NewContractRepository(db)
 	knowledgeRepo := sqlite.NewKnowledgeEntryRepository(db)
+	validationRepo := sqlite.NewValidationRepository(db)
+	validationAuditRepo := sqlite.NewValidationAuditRepository(db)
+	validationFeedbackRepo := sqlite.NewValidationFeedbackRepository(db)
 
-	validationService := validation.NewValidationService(llmService, logger)
+	validationService := validation.NewValidationService(llmService, logger, validationRepo, validationAuditRepo, validationFeedbackRepo)
 	analysisService := analysis.NewService(llmService)
-	documentService := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, ocrService, analysisService)
+	documentService := document.NewDocumentService(contractRepo, fileStorage, analysisService, logger)
 	knowledgeService := knowledge.NewKnowledgeService(llmService, logger, knowledgeRepo, redisClient)
 
 	return &Container{
-		Config:       cfg,
-		Logger:       logger,
-		DB:          db,
-		Tracer:      tp,
-		RedisClient:  redisClient,
-		OCRTMetrics:  ocrMetrics,
-		ContractRepo:  contractRepo,
-		KnowledgeRepo: knowledgeRepo,
-		LLMService:   llmService,
-		OCRService:      ocrService,
-		DocumentService:   documentService,
-		ValidationService: validationService,
-		AnalysisService:   analysisService,
-		KnowledgeService:  knowledgeService,
+		Config:                 cfg,
+		Logger:                 logger,
+		DB:                     db,
+		Tracer:                 tp,
+		RedisClient:            redisClient,
+		OCRTMetrics:            ocrMetrics,
+		ContractRepo:           contractRepo,
+		KnowledgeRepo:          knowledgeRepo,
+		ValidationRepo:         validationRepo,
+		ValidationAuditRepo:    validationAuditRepo,
+		ValidationFeedbackRepo: validationFeedbackRepo,
+		LLMService:             llmService,
+		OCRService:             ocrService,
+		DocumentService:        documentService,
+		ValidationService:      validationService,
+		AnalysisService:        analysisService,
+		KnowledgeService:       knowledgeService,
 	}
 }
 
@@ -146,7 +155,7 @@ func (c *Container) NewHealthHandler() *handlers.HealthHandler {
 
 // NewDocumentHandler creates a new document handler
 func (c *Container) NewDocumentHandler() *handlers.DocumentHandler {
-	return handlers.NewDocumentHandler(c.DocumentService, c.Logger)
+	return handlers.NewDocumentHandler(c.DocumentService, c.ValidationService, c.Logger)
 }
 
 // NewAnalysisHandler creates a new analysis handler

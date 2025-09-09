@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/seemantshankar/intrepid-smart-docparser/internal/repository"
+	"contract-analysis-service/internal/repository"
 )
 
 func TestContractRepository(t *testing.T) {
@@ -192,6 +192,33 @@ func TestContractRepository(t *testing.T) {
 	t.Run("UpdateStatus_NotFound", func(t *testing.T) {
 		nonExistentID := uuid.New()
 		err := repos.Contract.UpdateStatus(ctx, nonExistentID, "active")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+
+	t.Run("GetByTitle", func(t *testing.T) {
+		// Create a contract with a specific title
+		testTitle := "GetByTitle Test Contract"
+		contract := &repository.Contract{
+			Title: testTitle,
+			Description: "Contract for GetByTitle test",
+			Status: "active",
+		}
+		err := repos.Contract.Create(ctx, contract)
+		require.NoError(t, err)
+
+		// Retrieve the contract by title
+		retrieved, err := repos.Contract.GetByTitle(ctx, testTitle)
+		require.NoError(t, err)
+		assert.Equal(t, testTitle, retrieved.Title)
+		assert.Equal(t, contract.ID, retrieved.ID)
+		assert.Equal(t, "active", retrieved.Status)
+		assert.Equal(t, "Contract for GetByTitle test", retrieved.Description)
+	})
+
+	t.Run("GetByTitle_NotFound", func(t *testing.T) {
+		nonExistentTitle := "Non Existent Contract Title"
+		_, err := repos.Contract.GetByTitle(ctx, nonExistentTitle)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})

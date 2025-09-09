@@ -4,14 +4,16 @@ import (
 	"net/http"
 
 	"contract-analysis-service/internal/services/document"
+	"contract-analysis-service/internal/services/validation"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 // DocumentHandler handles HTTP requests for document operations.
 type DocumentHandler struct {
-	service document.Service
-	logger  *zap.Logger
+	service           document.Service
+	validationService validation.Service
+	logger            *zap.Logger
 }
 
 // UploadAndAnalyze handles the upload + analyze endpoint.
@@ -26,6 +28,16 @@ type DocumentHandler struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /contracts/upload-analyze [post]
 func (h *DocumentHandler) UploadAndAnalyze(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
     fileHeader, err := c.FormFile("file")
     if err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
@@ -40,7 +52,7 @@ func (h *DocumentHandler) UploadAndAnalyze(c *gin.Context) {
     }
     defer file.Close()
 
-    documentID, analysis, err := h.service.UploadAndAnalyze(c.Request.Context(), file, fileHeader)
+    contract, err := h.service.UploadAndAnalyze(c.Request.Context(), file, fileHeader, userIDStr)
     if err != nil {
         h.logger.Error("Failed to upload and analyze document", zap.Error(err))
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -48,16 +60,17 @@ func (h *DocumentHandler) UploadAndAnalyze(c *gin.Context) {
     }
 
     c.JSON(http.StatusCreated, gin.H{
-        "document_id": documentID,
-        "analysis":    analysis,
+        "document_id": contract.ID,
+        "analysis":    contract.Analysis,
     })
 }
 
 // NewDocumentHandler creates a new DocumentHandler.
-func NewDocumentHandler(service document.Service, logger *zap.Logger) *DocumentHandler {
+func NewDocumentHandler(service document.Service, validationService validation.Service, logger *zap.Logger) *DocumentHandler {
 	return &DocumentHandler{
-		service: service,
-		logger:  logger,
+		service:           service,
+		validationService: validationService,
+		logger:            logger,
 	}
 }
 
@@ -73,6 +86,16 @@ func NewDocumentHandler(service document.Service, logger *zap.Logger) *DocumentH
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /contracts/upload [post]
 func (h *DocumentHandler) Upload(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
@@ -87,7 +110,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 	}
 	defer file.Close()
 
-	documentID, err := h.service.Upload(c.Request.Context(), file, fileHeader)
+	documentID, err := h.service.Upload(c.Request.Context(), file, fileHeader, userIDStr)
 	if err != nil {
 		h.logger.Error("Failed to upload document", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -108,16 +131,86 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /contracts/{id} [get]
 func (h *DocumentHandler) Get(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
 	id := c.Param("id")
-
 	document, err := h.service.GetByID(c.Request.Context(), id)
-	if err != nil {
+	if err != nil || document == nil {
 		h.logger.Error("Failed to get document", zap.String("id", id), zap.Error(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
 		return
 	}
-
+	if document.UserID != userIDStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access to document"})
+		return
+	}
 	c.JSON(http.StatusOK, document)
+}
+
+// RetrieveAnalysis retrieves the analysis results for a document by its ID.
+// @Summary Get analysis results for a document
+// @Description Retrieves the structured analysis JSON for a previously analyzed document.
+// @Tags Documents
+// @Produce json
+// @Param id path string true "Document ID"
+// @Success 200 {object} map[string]interface{} "Analysis results"
+// @Failure 404 {object} map[string]string "Document not found or no analysis available"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /contracts/{id}/analysis [get]
+func (h *DocumentHandler) RetrieveAnalysis(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
+	id := c.Param("id")
+	document, err := h.service.GetByID(c.Request.Context(), id)
+	if err != nil || document == nil {
+		h.logger.Error("Failed to get document for analysis", zap.String("id", id), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
+		return
+	}
+	if document.UserID != userIDStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access to analysis"})
+		return
+	}
+	analysis, err := h.service.RetrieveAnalysis(c.Request.Context(), id)
+	if err != nil {
+		h.logger.Error("Failed to retrieve analysis", zap.String("id", id), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": "analysis not found"})
+		return
+	}
+
+	// Extract key fields from analysis
+	contractID := analysis["contract_id"]
+	contractName := analysis["contract_name"]
+	parties := analysis["parties_involved"]
+	effectiveDate := analysis["effective_date"]
+	terminationDate := analysis["termination_date"]
+
+	// Create response with extracted fields
+	response := gin.H{
+		"contract_id":      contractID,
+		"contract_name":    contractName,
+		"parties_involved": parties,
+		"effective_date":   effectiveDate,
+		"termination_date": terminationDate,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Delete handles the document deletion endpoint.
@@ -131,13 +224,87 @@ func (h *DocumentHandler) Get(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /contracts/{id} [delete]
 func (h *DocumentHandler) Delete(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
 	id := c.Param("id")
-
+	document, err := h.service.GetByID(c.Request.Context(), id)
+	if err != nil || document == nil {
+		h.logger.Error("Failed to get document for deletion", zap.String("id", id), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
+		return
+	}
+	if document.UserID != userIDStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized to delete document"})
+		return
+	}
 	if err := h.service.Delete(c.Request.Context(), id); err != nil {
 		h.logger.Error("Failed to delete document", zap.String("id", id), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete document"})
 		return
 	}
-
 	c.Status(http.StatusNoContent)
+}
+
+// DetectElements detects contract elements (parties, obligations, terms) from a document.
+// @Summary Detect contract elements
+// @Description Analyzes a stored document to extract detailed contract elements including parties, obligations, and terms
+// @Tags Documents
+// @Produce json
+// @Param document_id path string true "Document ID"
+// @Success 200 {object} models.ContractElementsResult "Contract elements detection result"
+// @Failure 400 {object} map[string]string "Bad request"
+// @Failure 404 {object} map[string]string "Document not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /contracts/{document_id}/elements [get]
+func (h *DocumentHandler) DetectElements(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	documentID := c.Param("document_id")
+	if documentID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "document_id is required"})
+		return
+	}
+
+	// Get the document content
+	document, err := h.service.GetDocument(c.Request.Context(), documentID, userIDStr)
+	if err != nil {
+		h.logger.Error("Failed to get document", zap.Error(err), zap.String("document_id", documentID))
+		c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
+		return
+	}
+
+	// Read document content
+	content, err := h.service.GetDocumentContent(c.Request.Context(), document.StoragePath)
+	if err != nil {
+		h.logger.Error("Failed to read document content", zap.Error(err), zap.String("document_id", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read document content"})
+		return
+	}
+
+	// Detect contract elements
+	elements, err := h.validationService.DetectContractElements(c.Request.Context(), string(content))
+	if err != nil {
+		h.logger.Error("Failed to detect contract elements", zap.Error(err), zap.String("document_id", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to detect contract elements"})
+		return
+	}
+
+	c.JSON(http.StatusOK, elements)
 }

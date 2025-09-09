@@ -123,6 +123,21 @@ func (r *PostgresContractRepository) GetByStatus(ctx context.Context, status str
 	return contracts, nil
 }
 
+func (r *PostgresContractRepository) GetByTitle(ctx context.Context, title string) (*Contract, error) {
+	var contract Contract
+	if err := r.db.WithContext(ctx).Where("title = ?", title).First(&contract).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Debug("Contract not found", zap.String("title", title))
+			return nil, fmt.Errorf("contract not found")
+		}
+		r.logger.Error("Failed to get contract by title", zap.Error(err), zap.String("title", title))
+		return nil, fmt.Errorf("failed to get contract: %w", err)
+	}
+
+	r.logger.Debug("Contract retrieved successfully", zap.String("id", contract.ID.String()), zap.String("title", title))
+	return &contract, nil
+}
+
 func (r *PostgresContractRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	result := r.db.WithContext(ctx).Model(&Contract{}).Where("id = ?", id).Update("status", status)
 	if result.Error != nil {

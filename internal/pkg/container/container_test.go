@@ -36,9 +36,9 @@ func TestNewContainer(t *testing.T) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", "testuser", "testpassword", host, port.Int(), "testdb")
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		db, err := sql.Open("postgres", dsn)
-		if err == nil {
-			if err = db.Ping(); err == nil { _ = db.Close(); break }
+		db, openErr := sql.Open("postgres", dsn)
+		if openErr == nil {
+			if pingErr := db.Ping(); pingErr == nil { _ = db.Close(); break }
 			_ = db.Close()
 		}
 		time.Sleep(300 * time.Millisecond)

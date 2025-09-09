@@ -48,11 +48,11 @@ func TestNewContainer_WithPostgres(t *testing.T) {
 	ready := false
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		db, err := sql.Open("postgres", dsn)
-		if err == nil {
-			err = db.Ping()
+		db, openErr := sql.Open("postgres", dsn)
+		if openErr == nil {
+			pingErr := db.Ping()
 			db.Close()
-			if err == nil {
+			if pingErr == nil {
 				ready = true
 				break
 			}

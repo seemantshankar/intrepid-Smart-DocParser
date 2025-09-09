@@ -1,5 +1,4 @@
 package document
-
 import (
 	"bytes"
 	"context"
@@ -8,23 +7,20 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"contract-analysis-service/internal/models"
-	pdfutil "contract-analysis-service/internal/pkg/pdf"
 	"contract-analysis-service/internal/pkg/storage"
 	"contract-analysis-service/internal/repositories"
-	"contract-analysis-service/internal/services/ocr"
-	"contract-analysis-service/internal/services/validation"
 	"contract-analysis-service/internal/services/analysis"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	// Remove: "encoding/json"
 )
-
 const (
 	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
-
 var allowedMimeTypes = map[string]bool{
 	"application/pdf": true,
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
@@ -33,204 +29,206 @@ var allowedMimeTypes = map[string]bool{
 	"image/png":  true,
 	"image/tiff": true,
 }
-
-// UploadAndAnalyze securely stores the file and performs one-step image-based LLM analysis.
-// Returns the stored document ID and the analysis JSON.
-func (s *documentService) UploadAndAnalyze(ctx context.Context, file io.Reader, fileHeader *multipart.FileHeader) (string, *models.ContractAnalysis, error) {
-    if fileHeader.Size > maxFileSize {
-        return "", nil, fmt.Errorf("file size %d exceeds the limit of %d bytes", fileHeader.Size, maxFileSize)
-    }
-
-    buf := make([]byte, 512)
-    n, err := file.Read(buf)
-    if err != nil && err != io.EOF {
-        return "", nil, fmt.Errorf("failed to read file for validation: %w", err)
-    }
-    combinedReader := io.MultiReader(bytes.NewReader(buf[:n]), file)
-
-    ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
-    mimeType := getMimeType(buf, ext)
-    if !allowedMimeTypes[mimeType] {
-        return "", nil, fmt.Errorf("file type '%s' is not allowed", mimeType)
-    }
-
-    // Save the file securely
-    filePath, err := s.storage.Save(combinedReader, fileHeader.Filename)
-    if err != nil {
-        return "", nil, fmt.Errorf("failed to save file: %w", err)
-    }
-
-    var analysisResult *models.ContractAnalysis
-    if ext == ".pdf" {
-        images, rasterErr := pdfutil.RasterizeToJPEGs(filePath, 10)
-        if rasterErr == nil && len(images) > 0 {
-            analysisResult, err = s.analysisService.AnalyzeContractFromImages(ctx, images)
-            if err != nil {
-                return "", nil, fmt.Errorf("analysis failed: %w", err)
-            }
-        } else {
-            // Minimal fallback: send header bytes as text
-            analysisResult, err = s.analysisService.AnalyzeContract(ctx, string(buf[:n]))
-            if err != nil {
-                return "", nil, fmt.Errorf("analysis failed (text fallback): %w", err)
-            }
-        }
-    } else {
-        // Non-PDF fallback
-        analysisResult, err = s.analysisService.AnalyzeContract(ctx, string(buf[:n]))
-        if err != nil {
-            return "", nil, fmt.Errorf("analysis failed (non-pdf): %w", err)
-        }
-    }
-
-    // Persist a Contract record with summary fields populated
-    contract := &models.Contract{
-        ID:       uuid.New().String(),
-        FilePath: filePath,
-        Status:   models.Analyzed,
-        Summary: &models.ContractSummary{
-            BuyerName:     analysisResult.Buyer,
-            BuyerAddress:  analysisResult.BuyerAddress,
-            BuyerCountry:  analysisResult.BuyerCountry,
-            SellerName:    analysisResult.Seller,
-            SellerAddress: analysisResult.SellerAddress,
-            SellerCountry: analysisResult.SellerCountry,
-            TotalValue:    analysisResult.TotalValue,
-            Currency:      analysisResult.Currency,
-        },
-    }
-    if err := s.contractRepo.Create(contract); err != nil {
-        return "", nil, fmt.Errorf("failed to create contract record: %w", err)
-    }
-
-    return contract.ID, analysisResult, nil
-}
-
 type Service interface {
-	Upload(ctx context.Context, file io.Reader, fileHeader *multipart.FileHeader) (string, error)
-	UploadAndAnalyze(ctx context.Context, file io.Reader, fileHeader *multipart.FileHeader) (string, *models.ContractAnalysis, error)
+	UploadAndAnalyze(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (*models.Contract, error)
+	Upload(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (string, error)
 	GetByID(ctx context.Context, id string) (*models.Contract, error)
+	GetDocument(ctx context.Context, id string, userID string) (*models.Contract, error)
+	GetDocumentContent(ctx context.Context, storagePath string) ([]byte, error)
+	RetrieveAnalysis(ctx context.Context, id string) (map[string]interface{}, error)
 	Delete(ctx context.Context, id string) error
+	CleanupExpiredDocuments(ctx context.Context) error
+	// Add other methods as needed
 }
 
 type documentService struct {
-	logger            *zap.Logger
-	storage           storage.FileStorage
-	contractRepo      repositories.ContractRepository
-	validationService validation.Service
-	ocrService        ocr.Service
-	analysisService   analysis.Service
+	repo repositories.ContractRepository
+	storage storage.FileStorage
+	analyzer analysis.Service
+	logger *zap.Logger
 }
 
-func NewDocumentService(logger *zap.Logger, storage storage.FileStorage, contractRepo repositories.ContractRepository, validationService validation.Service, ocrService ocr.Service, analysisService analysis.Service) Service {
+// NewDocumentService creates a new document service implementing the Service interface.
+func NewDocumentService(repo repositories.ContractRepository, storage storage.FileStorage, analyzer analysis.Service, logger *zap.Logger) Service {
 	return &documentService{
-		logger:            logger,
-		storage:           storage,
-		contractRepo:      contractRepo,
-		validationService: validationService,
-		ocrService:        ocrService,
-		analysisService:   analysisService,
+		repo: repo,
+		storage: storage,
+		analyzer: analyzer,
+		logger: logger,
 	}
 }
+const defaultRetentionDays = 365
 
-func (s *documentService) Upload(ctx context.Context, file io.Reader, fileHeader *multipart.FileHeader) (string, error) {
-	if fileHeader.Size > maxFileSize {
-		return "", fmt.Errorf("file size %d exceeds the limit of %d bytes", fileHeader.Size, maxFileSize)
+type closableBytesReader struct {
+	*bytes.Reader
+}
+
+func (c *closableBytesReader) Close() error {
+	return nil
+}
+
+func (s *documentService) UploadAndAnalyze(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (*models.Contract, error) {
+	if header.Size > maxFileSize {
+		return nil, fmt.Errorf("file size exceeds limit")
 	}
 
-	buf := make([]byte, 512)
-	n, err := file.Read(buf)
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to read file for validation: %w", err)
+	contentBytes, err := io.ReadAll(content)
+	if err != nil {
+		return nil, err
 	}
 
-	combinedReader := io.MultiReader(bytes.NewReader(buf[:n]), file)
-
-	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
-	mimeType := getMimeType(buf, ext)
-
+	mimeType := getMimeType(strings.ToLower(filepath.Ext(header.Filename)))
 	if !allowedMimeTypes[mimeType] {
-		return "", fmt.Errorf("file type '%s' is not allowed", mimeType)
+		return nil, fmt.Errorf("invalid file type")
 	}
 
-	s.logger.Info("File validated successfully", zap.String("filename", fileHeader.Filename), zap.String("mime_type", mimeType))
+	// Create a reader for storage
+	fileReader := &closableBytesReader{bytes.NewReader(contentBytes)}
 
-	filePath, err := s.storage.Save(combinedReader, fileHeader.Filename)
+	analysisResult, err := s.analyzer.AnalyzeContract(ctx, string(contentBytes))
 	if err != nil {
-		return "", fmt.Errorf("failed to save file: %w", err)
+		return nil, err
 	}
 
-	var docText string
-	if ext == ".pdf" {
-		if text, ok := pdfutil.ExtractText(filePath); ok {
-			docText = text
-			s.logger.Info("PDF text extracted directly", zap.String("path", filePath), zap.Int("length", len(text)))
-		} else {
-			images, rasterErr := pdfutil.RasterizeToJPEGs(filePath, 10)
-			if rasterErr != nil {
-				s.logger.Error("failed to rasterize PDF; falling back to header bytes", zap.String("path", filePath), zap.Error(rasterErr))
-				docText = string(buf[:n])
-			} else {
-				var b strings.Builder
-				for _, img := range images {
-					res, oerr := s.ocrService.ExtractTextFromImage(ctx, img)
-					if oerr != nil {
-						s.logger.Error("OCR failed for page image", zap.String("image", img), zap.Error(oerr))
-						continue
-					}
-					if res != nil && res.Text != "" {
-						b.WriteString(res.Text)
-						b.WriteString("\n\n")
-					}
-				}
-				docText = strings.TrimSpace(b.String())
-				if docText == "" {
-					docText = string(buf[:n])
-				}
-			}
-		}
-	} else {
-		docText = string(buf[:n])
-	}
-
-	validationResult, err := s.validationService.ValidateContract(ctx, docText)
+	storagePath, err := s.storage.Save(fileReader, header.Filename)
 	if err != nil {
-		return "", fmt.Errorf("failed to validate contract: %w", err)
+		return nil, err
 	}
 
-	newContract := &models.Contract{
-		ID:           uuid.New().String(),
-		FilePath:     filePath,
-		Status:       models.Validated,
-		ContractType: validationResult.ContractType,
-		Validation:   validationResult,
+	contract := &models.Contract{
+		ID: uuid.New().String(),
+		UserID: userID,
+		Filename: header.Filename,
+		StoragePath: storagePath,
+		CreatedAt: time.Now(),
+		RetentionDays: defaultRetentionDays,
+		Analysis: *analysisResult,
 	}
 
-	if err := s.contractRepo.Create(newContract); err != nil {
-		return "", fmt.Errorf("failed to create contract record: %w", err)
+	if err := s.repo.Create(contract); err != nil {
+		return nil, err
 	}
 
-	return newContract.ID, nil
+	return contract, nil
+}
+func (s *documentService) Upload(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (string, error) {
+	// Read content
+	contentBytes, err := io.ReadAll(content)
+	if err != nil {
+		return "", fmt.Errorf("failed to read content: %w", err)
+	}
+
+	// Validate file
+	if len(contentBytes) > maxFileSize {
+		return "", fmt.Errorf("file size exceeds maximum allowed size")
+	}
+
+	mimeType := getMimeType(filepath.Ext(header.Filename))
+	if !allowedMimeTypes[mimeType] {
+		return "", fmt.Errorf("unsupported file type: %s", mimeType)
+	}
+
+	// Create contract record
+	contract := &models.Contract{
+		ID:        uuid.New().String(),
+		UserID:    userID,
+		Filename:  header.Filename,
+		CreatedAt: time.Now(),
+	}
+
+	// Store file
+	fileReader := bytes.NewReader(contentBytes)
+	storagePath, err := s.storage.Save(fileReader, header.Filename)
+	if err != nil {
+		return "", fmt.Errorf("failed to store file: %w", err)
+	}
+	contract.StoragePath = storagePath
+
+	// Save to repository
+	if err := s.repo.Create(contract); err != nil {
+		return "", fmt.Errorf("failed to save contract: %w", err)
+	}
+
+	return contract.ID, nil
 }
 
 func (s *documentService) GetByID(ctx context.Context, id string) (*models.Contract, error) {
-	return s.contractRepo.GetByID(id)
+	return s.repo.GetByID(id)
+}
+
+func (s *documentService) GetDocument(ctx context.Context, id string, userID string) (*models.Contract, error) {
+	contract, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if contract.UserID != userID {
+		return nil, fmt.Errorf("unauthorized access to document")
+	}
+	return contract, nil
+}
+
+func (s *documentService) GetDocumentContent(ctx context.Context, storagePath string) ([]byte, error) {
+	return s.storage.Read(storagePath)
+}
+
+func (s *documentService) RetrieveAnalysis(ctx context.Context, id string) (map[string]interface{}, error) {
+	contract, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	// Check if analysis has any data by checking if buyer field is empty
+	if contract.Analysis.Buyer == "" {
+		return nil, fmt.Errorf("no analysis found for document")
+	}
+	// Convert struct to map for compatibility with handler
+	analysisMap := map[string]interface{}{
+		"buyer":          contract.Analysis.Buyer,
+		"buyer_address":  contract.Analysis.BuyerAddress,
+		"buyer_country":  contract.Analysis.BuyerCountry,
+		"seller":         contract.Analysis.Seller,
+		"seller_address": contract.Analysis.SellerAddress,
+		"seller_country": contract.Analysis.SellerCountry,
+		"total_value":    contract.Analysis.TotalValue,
+		"currency":       contract.Analysis.Currency,
+		"milestones":     contract.Analysis.Milestones,
+		"risk_factors":   contract.Analysis.RiskFactors,
+		"contract_id":    contract.ID,
+	}
+	return analysisMap, nil
 }
 
 func (s *documentService) Delete(ctx context.Context, id string) error {
-	contract, err := s.contractRepo.GetByID(id)
+	contract, err := s.repo.GetByID(id)
 	if err != nil {
-		return fmt.Errorf("failed to get contract for deletion: %w", err)
+		return err
 	}
-
-	if err := s.storage.Delete(contract.FilePath); err != nil {
-		s.logger.Error("failed to delete file from storage", zap.String("path", contract.FilePath), zap.Error(err))
+	if err := s.storage.Delete(contract.StoragePath); err != nil {
+		s.logger.Warn("Failed to delete file from storage", zap.Error(err), zap.String("path", contract.StoragePath))
 	}
-
-	return s.contractRepo.Delete(id)
+	return s.repo.Delete(id)
 }
-
-func getMimeType(buffer []byte, extension string) string {
+// 	return &contract.Analysis, nil
+// }
+func (s *documentService) CleanupExpiredDocuments(ctx context.Context) error {
+	contracts, err := s.repo.List()
+	if err != nil {
+		return err
+	}
+	for _, contract := range contracts {
+		if time.Since(contract.CreatedAt) > time.Duration(contract.RetentionDays)*24*time.Hour {
+			if err := s.repo.Delete(contract.ID); err != nil {
+				// log error
+				continue
+			}
+			if err := s.storage.Delete(contract.StoragePath); err != nil {
+				// log error
+				continue
+			}
+		}
+	}
+	return nil
+}
+func getMimeType(extension string) string {
 	switch extension {
 	case ".pdf":
 		return "application/pdf"

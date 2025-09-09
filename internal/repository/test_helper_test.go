@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/seemantshankar/intrepid-smart-docparser/internal/repository"
+	"contract-analysis-service/internal/repository"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"

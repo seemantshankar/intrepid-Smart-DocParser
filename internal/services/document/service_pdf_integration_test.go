@@ -15,10 +15,8 @@ import (
 	"contract-analysis-service/internal/services/document"
 	llmclient "contract-analysis-service/internal/services/llm/client"
 	"contract-analysis-service/internal/services/llm"
-	ocrsvc "contract-analysis-service/internal/services/ocr"
-	"contract-analysis-service/internal/services/validation"
+	"contract-analysis-service/internal/services/analysis"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -92,15 +90,8 @@ func TestDocumentService_Integration_Upload_PDF_Rasterization(t *testing.T) {
 	// Services
 	llmService := llm.NewLLMService(logger)
 	llmclient.AddOpenRouterClientToService(llmService, cfg)
-	validationService := validation.NewValidationService(llmService, logger)
-
-	ocrMock := new(ocrsvc.MockOCRService)
-	// We don't know how many pages; allow any calls and return some text.
-	ocrMock.On("ExtractTextFromImage", 
-		mock.Anything, 
-		mock.AnythingOfType("string")).Return(&ocrsvc.OCRResult{Text: "mock ocr text", Confidence: 0.9}, nil).Maybe()
-
-	service := document.NewDocumentService(logger, fileStorage, contractRepo, validationService, ocrMock, nil)
+	analysisService := analysis.NewService(llmService)
+	service := document.NewDocumentService(contractRepo, fileStorage, analysisService, logger)
 
 	// Open the PDF and build a file header
 	f, err := os.Open(pdfPath)
@@ -112,19 +103,18 @@ func TestDocumentService_Integration_Upload_PDF_Rasterization(t *testing.T) {
 
 	// Execute upload
 	ctx := context.Background()
-	id, err := service.Upload(ctx, f, fh)
-	require.NoError(t, err)
-	require.NotEmpty(t, id)
-
-	// Fetch and assert stored
-	contract, err := service.GetByID(ctx, id)
+	contract, err := service.UploadAndAnalyze(ctx, f, fh, "test-user")
 	require.NoError(t, err)
 	require.NotNil(t, contract)
-	assert.Equal(t, id, contract.ID)
 
-	// We expect OCR to have been attempted for scanned PDFs; if the test PDF wasn't scanned,
-	// the path might have taken direct text extraction and not call OCR. In that case, we skip with info.
-	if !ocrMock.AssertCalled(t, "ExtractTextFromImage", mock.Anything, mock.AnythingOfType("string")) {
-		t.Skip("The provided PDF did not trigger rasterization/OCR. Provide a scanned PDF via RASTER_INTEGRATION_PDF to fully exercise the path.")
+	// Fetch and assert stored
+	retrievedContract, err := service.GetByID(ctx, contract.ID)
+	require.NoError(t, err)
+	require.NotNil(t, retrievedContract)
+	assert.Equal(t, contract.ID, retrievedContract.ID)
+
+	// Clean up - remove uploaded file
+	if retrievedContract.StoragePath != "" {
+		os.Remove(retrievedContract.StoragePath)
 	}
 }

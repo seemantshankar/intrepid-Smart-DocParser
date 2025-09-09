@@ -11,6 +11,7 @@ import (
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"go.uber.org/zap"
+	"strings"
 )
 
 // Middleware holds all middleware components
@@ -86,24 +87,28 @@ func (m *Middleware) JWT(secret string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(401, gin.H{"error": "authorization header required"})
 			return
 		}
-		
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte(secret), nil
 		})
-		
-		if err != nil {
+		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 			return
 		}
-		
-		if !token.Valid {
-			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token claims"})
 			return
 		}
-		
+		userID, ok := claims["sub"].(string)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "missing user ID in token"})
+			return
+		}
+		c.Set("user_id", userID)
 		c.Next()
 	}
 }

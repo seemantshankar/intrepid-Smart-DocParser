@@ -13,6 +13,7 @@ import (
 type FileStorage interface {
 	Save(file io.Reader, fileName string) (string, error)
 	Delete(filePath string) error
+	Read(filePath string) ([]byte, error)
 }
 
 // LocalStorage implements FileStorage for the local filesystem.
@@ -57,4 +58,13 @@ func (s *LocalStorage) Delete(filePath string) error {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 	return nil
+}
+
+// Read reads a file from the local filesystem.
+func (s *LocalStorage) Read(filePath string) ([]byte, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+	return data, nil
 }

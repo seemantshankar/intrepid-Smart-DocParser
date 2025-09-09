@@ -1,3 +1,6 @@
 {
-    "kiroAgent.configureMCP": "Disabled"
+    "kiroAgent.configureMCP": "Disabled",
+    "gopls": {
+        "buildFlags": ["-tags=repo_integration"]
+    }
 }

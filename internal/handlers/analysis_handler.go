@@ -70,15 +70,15 @@ func (h *AnalysisHandler) Analyze(c *gin.Context) {
 	// Only implement PDF path now; other types can be added later
 	if ext == ".pdf" {
 		// Buffer the file to a temp PDF path
-		tmp, err := os.CreateTemp("", "analyze-*.pdf")
-		if err != nil {
-			h.logger.Error("failed to create temp file", zap.Error(err))
+		tmp, tmpErr := os.CreateTemp("", "analyze-*.pdf")
+		if tmpErr != nil {
+			h.logger.Error("failed to create temp file", zap.Error(tmpErr))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 			return
 		}
 		defer func() { _ = os.Remove(tmp.Name()) }()
-		if _, err := io.Copy(tmp, reader); err != nil {
-			h.logger.Error("failed to buffer upload", zap.Error(err))
+		if _, copyErr := io.Copy(tmp, reader); copyErr != nil {
+			h.logger.Error("failed to buffer upload", zap.Error(copyErr))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 			return
 		}

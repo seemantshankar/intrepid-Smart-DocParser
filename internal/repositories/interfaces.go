@@ -45,3 +45,41 @@ type KnowledgeEntryRepository interface {
 	List() ([]*models.KnowledgeEntry, error)
 	GetByIndustry(industry string) ([]*models.KnowledgeEntry, error)
 }
+
+type ValidationRepository interface {
+	Create(v *models.ValidationRecord) error
+	GetByID(id string) (*models.ValidationRecord, error)
+	Update(v *models.ValidationRecord) error
+	Delete(id string) error
+	List() ([]*models.ValidationRecord, error)
+	GetByContractID(contractID string) ([]*models.ValidationRecord, error)
+	GetByUserID(userID string) ([]*models.ValidationRecord, error)
+	GetByType(validationType string) ([]*models.ValidationRecord, error)
+}
+
+type ValidationAuditRepository interface {
+	Create(a *models.ValidationAuditLog) error
+	GetByID(id string) (*models.ValidationAuditLog, error)
+	List() ([]*models.ValidationAuditLog, error)
+	GetByValidationID(validationID string) ([]*models.ValidationAuditLog, error)
+	GetByUserID(userID string) ([]*models.ValidationAuditLog, error)
+}
+
+type ValidationFeedbackRepository interface {
+	Create(f *models.ValidationFeedback) error
+	GetByID(id string) (*models.ValidationFeedback, error)
+	Update(f *models.ValidationFeedback) error
+	Delete(id string) error
+	List() ([]*models.ValidationFeedback, error)
+	GetByValidationID(validationID string) ([]*models.ValidationFeedback, error)
+	GetByUserID(userID string) ([]*models.ValidationFeedback, error)
+}
+
+type ClassificationRepository interface {
+	Create(c *models.ClassificationRecord) error
+	GetByID(id string) (*models.ClassificationRecord, error)
+	Update(c *models.ClassificationRecord) error
+	Delete(id string) error
+	List() ([]*models.ClassificationRecord, error)
+	GetByContractID(contractID string) ([]*models.ClassificationRecord, error)
+}

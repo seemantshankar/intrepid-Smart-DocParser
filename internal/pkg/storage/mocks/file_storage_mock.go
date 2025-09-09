@@ -22,3 +22,9 @@ func (m *FileStorage) Delete(filePath string) error {
 	args := m.Called(filePath)
 	return args.Error(0)
 }
+
+// Read mocks the Read method.
+func (m *FileStorage) Read(filePath string) ([]byte, error) {
+	args := m.Called(filePath)
+	return args.Get(0).([]byte), args.Error(1)
+}

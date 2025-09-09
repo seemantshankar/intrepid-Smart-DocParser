@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/seemantshankar/intrepid-smart-docparser/internal/repository"
+	"contract-analysis-service/internal/repository"
 )
 
 func TestMilestoneRepository(t *testing.T) {
