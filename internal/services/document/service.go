@@ -1,4 +1,5 @@
 package document
+
 import (
 	"bytes"
 	"context"
@@ -18,9 +19,11 @@ import (
 	"go.uber.org/zap"
 	// Remove: "encoding/json"
 )
+
 const (
 	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
+
 var allowedMimeTypes = map[string]bool{
 	"application/pdf": true,
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
@@ -29,6 +32,7 @@ var allowedMimeTypes = map[string]bool{
 	"image/png":  true,
 	"image/tiff": true,
 }
+
 type Service interface {
 	UploadAndAnalyze(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (*models.Contract, error)
 	Upload(ctx context.Context, content io.Reader, header *multipart.FileHeader, userID string) (string, error)
@@ -42,21 +46,22 @@ type Service interface {
 }
 
 type documentService struct {
-	repo repositories.ContractRepository
-	storage storage.FileStorage
+	repo     repositories.ContractRepository
+	storage  storage.FileStorage
 	analyzer analysis.Service
-	logger *zap.Logger
+	logger   *zap.Logger
 }
 
 // NewDocumentService creates a new document service implementing the Service interface.
 func NewDocumentService(repo repositories.ContractRepository, storage storage.FileStorage, analyzer analysis.Service, logger *zap.Logger) Service {
 	return &documentService{
-		repo: repo,
-		storage: storage,
+		repo:     repo,
+		storage:  storage,
 		analyzer: analyzer,
-		logger: logger,
+		logger:   logger,
 	}
 }
+
 const defaultRetentionDays = 365
 
 type closableBytesReader struct {
@@ -96,13 +101,13 @@ func (s *documentService) UploadAndAnalyze(ctx context.Context, content io.Reade
 	}
 
 	contract := &models.Contract{
-		ID: uuid.New().String(),
-		UserID: userID,
-		Filename: header.Filename,
-		StoragePath: storagePath,
-		CreatedAt: time.Now(),
+		ID:            uuid.New().String(),
+		UserID:        userID,
+		Filename:      header.Filename,
+		StoragePath:   storagePath,
+		CreatedAt:     time.Now(),
 		RetentionDays: defaultRetentionDays,
-		Analysis: *analysisResult,
+		Analysis:      *analysisResult,
 	}
 
 	if err := s.repo.Create(contract); err != nil {
@@ -207,8 +212,9 @@ func (s *documentService) Delete(ctx context.Context, id string) error {
 	}
 	return s.repo.Delete(id)
 }
-// 	return &contract.Analysis, nil
-// }
+
+//		return &contract.Analysis, nil
+//	}
 func (s *documentService) CleanupExpiredDocuments(ctx context.Context) error {
 	contracts, err := s.repo.List()
 	if err != nil {

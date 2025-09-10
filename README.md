@@ -12,6 +12,7 @@ Smart-DocParser is a Go-based document analysis system that leverages Large Lang
 ## Architecture
 - **Handlers**: `analysis_handler.go` for analysis, `document_handler.go` for document operations.
 - **Services**: LLM service in `internal/services/llm/` for contract analysis, milestone sequencing.
+- **Prompt Engine**: Centralized prompt management in `internal/services/llm/prompt_engine.go`.
 - **Models**: DTOs for contract analysis, risks, milestones in `internal/models/`.
 - **Database**: PostgreSQL/SQLite repositories for persistence.
 
@@ -137,6 +138,24 @@ go test -coverprofile=coverage.out ./...
 
 The service will be available at `http://localhost:9091`.
 
+### Graceful Shutdown
+
+The application implements graceful shutdown to ensure proper cleanup and port liberation:
+
+- **Signal Handling**: Responds to SIGINT (Ctrl+C) and SIGTERM signals
+- **Timeout Management**: Allows 30 seconds for ongoing requests to complete
+- **Port Liberation**: Properly frees the server port on shutdown
+- **Clean Exit**: Logs shutdown progress and exits gracefully
+
+To stop the server gracefully:
+```bash
+# Using Ctrl+C (SIGINT)
+^C
+
+# Or using kill command (SIGTERM)
+pkill -TERM -f "go run main.go"
+```
+
 ## 📚 API Documentation
 
 Interactive API documentation is available at:
@@ -173,6 +192,20 @@ Example successful readiness response:
 If a dependency is unavailable, `/ready` returns HTTP 503 with details (e.g., `redis: unhealthy: <error>`).
 
 ## 🛠 Development
+
+### Prompt Engineering
+
+**CRITICAL:** All LLM prompts must use the centralized prompt engine:
+
+```go
+// ✅ CORRECT - Use prompt engine
+instruction := s.promptEngine.BuildComprehensiveContractAnalysisPrompt()
+
+// ❌ WRONG - Never embed prompts in services
+instruction := `You are a legal expert...`
+```
+
+**Location:** `internal/services/llm/prompt_engine.go`
 
 ### Testing
 

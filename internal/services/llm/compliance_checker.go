@@ -50,10 +50,10 @@ Return a JSON object with compliance analysis:
 }
 
 Only return the JSON, no additional text.`, jurisdiction, contractText)
-	
+
 	// Create request payload
 	payload := map[string]interface{}{
-		"model": "gpt-4o",
+		"model": "openai/gpt-5-nano",
 		"messages": []map[string]interface{}{
 			{
 				"role":    "system",
@@ -66,12 +66,12 @@ Only return the JSON, no additional text.`, jurisdiction, contractText)
 		},
 		"temperature": 0.1,
 	}
-	
+
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	
+
 	// Execute request
 	resp, err := c.service.ExecuteRequest(ctx, provider, &external.Request{
 		Method:  "POST",
@@ -82,7 +82,7 @@ Only return the JSON, no additional text.`, jurisdiction, contractText)
 	if err != nil {
 		return nil, fmt.Errorf("LLM API request failed: %w", err)
 	}
-	
+
 	// Parse response
 	return c.parseComplianceResponse(resp.Body)
 }
@@ -96,15 +96,15 @@ func (c *ComplianceChecker) parseComplianceResponse(body []byte) (*models.Analys
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	
+
 	if err := json.Unmarshal(body, &openAIResp); err != nil {
 		return nil, fmt.Errorf("failed to parse LLM response: %w", err)
 	}
-	
+
 	if len(openAIResp.Choices) == 0 {
 		return nil, fmt.Errorf("no choices in LLM response")
 	}
-	
+
 	var report models.AnalysisComplianceReport
 	content := openAIResp.Choices[0].Message.Content
 

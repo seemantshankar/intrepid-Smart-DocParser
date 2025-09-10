@@ -13,9 +13,9 @@ type ClientConfig struct {
 
 // Credentials represents authentication credentials
 type Credentials struct {
-	APIKey     string
-	SecretKey  string
-	Token      string
+	APIKey    string
+	SecretKey string
+	Token     string
 }
 
 // DefaultRetryConfig returns a sensible default retry configuration

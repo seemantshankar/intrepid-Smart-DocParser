@@ -3,8 +3,8 @@ package router
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"contract-analysis-service/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 type Router struct {

@@ -14,31 +14,31 @@ type OCRMetrics struct {
 
 // NewOCRMetrics creates and registers the OCR metrics.
 func NewOCRMetrics() *OCRMetrics {
-    // Use a per-instance registry to avoid duplicate registrations during tests
-    reg := prometheus.NewRegistry()
-    auto := promauto.With(reg)
-    return &OCRMetrics{
-        RequestsTotal: auto.NewCounterVec(
-            prometheus.CounterOpts{
-                Name: "ocr_requests_total",
-                Help: "Total number of OCR requests.",
-            },
-            []string{"model"},
-        ),
-        RequestDuration: auto.NewHistogramVec(
-            prometheus.HistogramOpts{
-                Name:    "ocr_request_duration_seconds",
-                Help:    "Duration of OCR requests.",
-                Buckets: prometheus.DefBuckets,
-            },
-            []string{"model"},
-        ),
-        ErrorsTotal: auto.NewCounterVec(
-            prometheus.CounterOpts{
-                Name: "ocr_errors_total",
-                Help: "Total number of OCR errors.",
-            },
-            []string{"model"},
-        ),
-    }
+	// Use a per-instance registry to avoid duplicate registrations during tests
+	reg := prometheus.NewRegistry()
+	auto := promauto.With(reg)
+	return &OCRMetrics{
+		RequestsTotal: auto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "ocr_requests_total",
+				Help: "Total number of OCR requests.",
+			},
+			[]string{"model"},
+		),
+		RequestDuration: auto.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "ocr_request_duration_seconds",
+				Help:    "Duration of OCR requests.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"model"},
+		),
+		ErrorsTotal: auto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "ocr_errors_total",
+				Help: "Total number of OCR errors.",
+			},
+			[]string{"model"},
+		),
+	}
 }

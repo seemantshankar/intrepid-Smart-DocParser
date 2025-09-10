@@ -2,14 +2,14 @@ package container
 
 import (
 	"context"
-	"fmt"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
 	"contract-analysis-service/configs"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	_ "github.com/lib/pq"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 func TestNewContainer_WithPostgres(t *testing.T) {
@@ -69,7 +69,7 @@ func TestNewContainer_WithPostgres(t *testing.T) {
 		Server:      configs.ServerConfig{Port: "8080"},
 		Database: configs.DatabaseConfig{
 			Dialect: "postgres",
-			Name:   fmt.Sprintf("host=%s port=%d user=testuser password=testpassword dbname=testdb sslmode=disable", host, port.Int()),
+			Name:    fmt.Sprintf("host=%s port=%d user=testuser password=testpassword dbname=testdb sslmode=disable", host, port.Int()),
 			LogMode: true,
 		},
 		Jaeger: configs.JaegerConfig{

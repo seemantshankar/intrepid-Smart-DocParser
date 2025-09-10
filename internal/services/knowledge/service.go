@@ -46,7 +46,7 @@ func (s *knowledgeService) ClassifyIndustry(ctx context.Context, contractText st
 	provider := "openrouter"
 
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",

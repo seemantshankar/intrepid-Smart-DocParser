@@ -8,7 +8,6 @@ import (
 
 	"contract-analysis-service/internal/models"
 	"contract-analysis-service/internal/pkg/external"
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -29,7 +28,7 @@ func TestLLMService_AnalyzeContract(t *testing.T) {
 	expectedAnalysis := &models.ContractAnalysis{
 		Buyer:      "Test Buyer",
 		Seller:     "Test Seller",
-		TotalValue: decimal.NewFromFloat(1000.0),
+		TotalValue: models.FlexibleString("1000.0"),
 	}
 	responseBody, _ := json.Marshal(expectedAnalysis)
 
@@ -47,7 +46,7 @@ func TestLLMService_AnalyzeContract(t *testing.T) {
 	assert.NotNil(t, analysis)
 	assert.Equal(t, expectedAnalysis.Buyer, analysis.Buyer)
 	assert.Equal(t, expectedAnalysis.Seller, analysis.Seller)
-	assert.True(t, expectedAnalysis.TotalValue.Equal(analysis.TotalValue))
+	assert.Equal(t, expectedAnalysis.TotalValue, analysis.TotalValue)
 
 	// Assert that the mock was called as expected
 	mockClient.AssertExpectations(t)

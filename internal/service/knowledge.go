@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"contract-analysis-service/internal/repository"
+	"github.com/google/uuid"
 )
 
 type KnowledgeService interface {
@@ -28,13 +28,13 @@ func NewKnowledgeService(repo repository.KnowledgeRepository) KnowledgeService {
 func (s *knowledgeService) CreateKnowledge(ctx context.Context, title, content, category, source string, tags []string, metadata map[string]any) error {
 	id := uuid.New()
 	entry := &repository.KnowledgeEntry{
-		ID:        id,
-		Title:     title,
-		Content:   content,
-		Category:  category,
-		Tags:      tags,
-		Source:    source,
-		Metadata:  metadata,
+		ID:       id,
+		Title:    title,
+		Content:  content,
+		Category: category,
+		Tags:     tags,
+		Source:   source,
+		Metadata: metadata,
 	}
 	return s.repo.CreateKnowledge(ctx, entry)
 }

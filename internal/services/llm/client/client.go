@@ -8,7 +8,7 @@ import (
 
 const (
 	OpenRouterProvider = "openrouter"
-	DefaultModel     = "qwen/qwen-2.5-vl-72b-instruct:free"
+	DefaultModel       = "openai/gpt-5-nano"
 )
 
 // OpenRouterClient is a client for the OpenRouter API.

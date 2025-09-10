@@ -1,8 +1,8 @@
 server:
   port: "9091"
   env: "development"
-  read_timeout: 30s
-  write_timeout: 30s
+  read_timeout: 300s  # 5 minutes for OCR processing
+  write_timeout: 300s # 5 minutes for response
 
 database:
   dialect: "sqlite3"
@@ -36,7 +36,7 @@ llm:
   openrouter:
     base_url: "https://openrouter.ai/api/v1"
     api_key: "${OPENROUTER_API_KEY}"
-    timeout: 60s
+    timeout: 300s  # 5 minutes for large image analysis
     retry_count: 3
     retry_wait_time: 5s
     retry_max_interval: 30s

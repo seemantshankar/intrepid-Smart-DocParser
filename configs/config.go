@@ -39,11 +39,11 @@ type RedisConfig struct {
 
 // LLMProviderConfig holds configuration for a single LLM provider
 type LLMProviderConfig struct {
-	BaseURL       string        `mapstructure:"base_url"`
-	APIKey        string        `mapstructure:"api_key"`
-	Timeout       time.Duration `mapstructure:"timeout"`
-	RetryCount    int           `mapstructure:"retry_count"`
-	RetryWaitTime time.Duration `mapstructure:"retry_wait_time"`
+	BaseURL          string        `mapstructure:"base_url"`
+	APIKey           string        `mapstructure:"api_key"`
+	Timeout          time.Duration `mapstructure:"timeout"`
+	RetryCount       int           `mapstructure:"retry_count"`
+	RetryWaitTime    time.Duration `mapstructure:"retry_wait_time"`
 	RetryMaxInterval time.Duration `mapstructure:"retry_max_interval"`
 }
 
@@ -57,7 +57,7 @@ type ServerConfig struct {
 // DatabaseConfig holds database configuration
 type DatabaseConfig struct {
 	Dialect string `mapstructure:"dialect"`
-	Name   string `mapstructure:"name"`
+	Name    string `mapstructure:"name"`
 	LogMode bool   `mapstructure:"log_mode"`
 }
 
@@ -104,12 +104,12 @@ func LoadConfig(configPath string) (*Config, error) {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
-	
+
 	// Override config with environment variables if they exist
 	if apiKey := os.Getenv("OPENROUTER_API_KEY"); apiKey != "" {
 		cfg.OCR.APIKey = apiKey
 		cfg.LLM.OpenRouter.APIKey = apiKey
 	}
-	
+
 	return &cfg, nil
 }

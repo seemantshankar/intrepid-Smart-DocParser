@@ -12,8 +12,9 @@ import (
 	"contract-analysis-service/internal/pkg/tracing"
 	"contract-analysis-service/internal/repositories"
 	"contract-analysis-service/internal/repositories/sqlite"
-	"contract-analysis-service/internal/services/document"
+	"contract-analysis-service/internal/repository"
 	"contract-analysis-service/internal/services/analysis"
+	"contract-analysis-service/internal/services/document"
 	"contract-analysis-service/internal/services/knowledge"
 	"contract-analysis-service/internal/services/llm"
 	llmclient "contract-analysis-service/internal/services/llm/client"
@@ -27,27 +28,29 @@ import (
 
 // Container holds all application dependencies
 type Container struct {
-	Config     *configs.Config
-	Logger     *zap.Logger
+	Config      *configs.Config
+	Logger      *zap.Logger
 	DB          *gorm.DB
 	Tracer      *tracing.TracerProvider
 	RedisClient *redis.Client
 	OCRTMetrics *metrics.OCRMetrics
 
 	// Repositories
-	ContractRepo       repositories.ContractRepository
-	KnowledgeRepo      repositories.KnowledgeEntryRepository
-	ValidationRepo     repositories.ValidationRepository
-	ValidationAuditRepo repositories.ValidationAuditRepository
+	ContractRepo           repositories.ContractRepository
+	ContractAnalysisRepo   repository.ContractAnalysisRepository
+	KnowledgeRepo          repositories.KnowledgeEntryRepository
+	ValidationRepo         repositories.ValidationRepository
+	ValidationAuditRepo    repositories.ValidationAuditRepository
 	ValidationFeedbackRepo repositories.ValidationFeedbackRepository
 
 	// Services
-	LLMService        llm.Service
-	OCRService        ocr.Service
-	DocumentService   document.Service
-	ValidationService validation.Service
-	AnalysisService   analysis.Service
-	KnowledgeService  knowledge.Service
+	LLMService              llm.Service
+	OCRService              ocr.Service
+	DocumentService         document.Service
+	ValidationService       validation.Service
+	AnalysisService         analysis.Service
+	ContractAnalysisService *analysis.ContractAnalysisService
+	KnowledgeService        knowledge.Service
 }
 
 // NewContainer creates and initializes a new Container
@@ -91,7 +94,7 @@ func NewContainer(cfg *configs.Config) *Container {
 		logger.Info("tracing disabled, no Jaeger URL provided")
 	}
 
-		// Initialize services
+	// Initialize services
 	llmService := llm.NewLLMService(logger)
 	llmclient.AddOpenRouterClientToService(llmService, cfg)
 
@@ -117,34 +120,41 @@ func NewContainer(cfg *configs.Config) *Container {
 
 	// Initialize repositories
 	contractRepo := sqlite.NewContractRepository(db)
+	contractAnalysisRepo := sqlite.NewContractAnalysisRepository(db, logger)
 	knowledgeRepo := sqlite.NewKnowledgeEntryRepository(db)
 	validationRepo := sqlite.NewValidationRepository(db)
 	validationAuditRepo := sqlite.NewValidationAuditRepository(db)
 	validationFeedbackRepo := sqlite.NewValidationFeedbackRepository(db)
 
+	// Initialize knowledge repo using the repository package interface
+	knowledgeRepoForAnalysis := repository.NewKnowledgeRepository(db)
+	
 	validationService := validation.NewValidationService(llmService, logger, validationRepo, validationAuditRepo, validationFeedbackRepo)
 	analysisService := analysis.NewService(llmService)
+	contractAnalysisService := analysis.NewContractAnalysisService(llmService, knowledgeRepoForAnalysis, logger, "openrouter")
 	documentService := document.NewDocumentService(contractRepo, fileStorage, analysisService, logger)
 	knowledgeService := knowledge.NewKnowledgeService(llmService, logger, knowledgeRepo, redisClient)
 
 	return &Container{
-		Config:                 cfg,
-		Logger:                 logger,
-		DB:                     db,
-		Tracer:                 tp,
-		RedisClient:            redisClient,
-		OCRTMetrics:            ocrMetrics,
-		ContractRepo:           contractRepo,
-		KnowledgeRepo:          knowledgeRepo,
-		ValidationRepo:         validationRepo,
-		ValidationAuditRepo:    validationAuditRepo,
-		ValidationFeedbackRepo: validationFeedbackRepo,
-		LLMService:             llmService,
-		OCRService:             ocrService,
-		DocumentService:        documentService,
-		ValidationService:      validationService,
-		AnalysisService:        analysisService,
-		KnowledgeService:       knowledgeService,
+		Config:                  cfg,
+		Logger:                  logger,
+		DB:                      db,
+		Tracer:                  tp,
+		RedisClient:             redisClient,
+		OCRTMetrics:             ocrMetrics,
+		ContractRepo:            contractRepo,
+		ContractAnalysisRepo:    contractAnalysisRepo,
+		KnowledgeRepo:           knowledgeRepo,
+		ValidationRepo:          validationRepo,
+		ValidationAuditRepo:     validationAuditRepo,
+		ValidationFeedbackRepo:  validationFeedbackRepo,
+		LLMService:              llmService,
+		OCRService:              ocrService,
+		DocumentService:         documentService,
+		ValidationService:       validationService,
+		AnalysisService:         analysisService,
+		ContractAnalysisService: contractAnalysisService,
+		KnowledgeService:        knowledgeService,
 	}
 }
 
@@ -161,4 +171,9 @@ func (c *Container) NewDocumentHandler() *handlers.DocumentHandler {
 // NewAnalysisHandler creates a new analysis handler
 func (c *Container) NewAnalysisHandler() *handlers.AnalysisHandler {
 	return handlers.NewAnalysisHandler(c.Logger, c.OCRService, c.AnalysisService)
+}
+
+// NewContractAnalysisHandler creates a new contract analysis handler
+func (c *Container) NewContractAnalysisHandler() *handlers.ContractAnalysisHandler {
+	return handlers.NewContractAnalysisHandler(c.Logger, c.ContractAnalysisService, c.ContractAnalysisRepo)
 }

@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
-	"gorm.io/gorm"
 	"context"
-	"time"
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	"net/http"
+	"time"
 )
 
 // HealthHandler handles health check endpoints

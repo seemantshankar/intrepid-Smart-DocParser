@@ -4,6 +4,173 @@
         "contact": {}
     },
     "paths": {
+        "/analysis/{id}": {
+            "get": {
+                "description": "Retrieves contract analysis by its unique identifier",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contract Analysis"
+                ],
+                "summary": "Get analysis by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Analysis ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contract analysis record",
+                        "schema": {
+                            "$ref": "#/definitions/repository.ContractAnalysisRecord"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/contract-analyses": {
+            "get": {
+                "description": "Lists contract analyses with optional filtering and pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contract Analysis"
+                ],
+                "summary": "List contract analyses",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Limit for pagination",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of contract analyses",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/contract-analysis/{contract_id}": {
+            "get": {
+                "description": "Retrieves comprehensive analysis results for a specific contract",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contract Analysis"
+                ],
+                "summary": "Get contract analysis by contract ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Contract ID",
+                        "name": "contract_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contract analysis record",
+                        "schema": {
+                            "$ref": "#/definitions/repository.ContractAnalysisRecord"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/contracts/analyze": {
             "post": {
                 "description": "Upload a document (PDF preferred). If scanned, pages are rasterized and OCR'd. The extracted text is analyzed using LLM prompts to return structured JSON.",
@@ -32,6 +199,58 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/contracts/analyze-comprehensive": {
+            "post": {
+                "description": "Performs comprehensive contract analysis using LLM including summary extraction, payment obligations identification, percentage-based calculations, and risk assessment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contract Analysis"
+                ],
+                "summary": "Analyze contract comprehensively",
+                "parameters": [
+                    {
+                        "description": "Contract text to analyze",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AnalyzeContractRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comprehensive analysis result",
+                        "schema": {
+                            "$ref": "#/definitions/analysis.AnalyzeContractResult"
                         }
                     },
                     "400": {
@@ -159,6 +378,62 @@
                 }
             }
         },
+        "/contracts/{document_id}/elements": {
+            "get": {
+                "description": "Analyzes a stored document to extract detailed contract elements including parties, obligations, and terms",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Detect contract elements",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contract elements detection result",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContractElementsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Document not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/contracts/{id}": {
             "get": {
                 "description": "Get a single document's metadata by its unique ID.",
@@ -248,6 +523,54 @@
                 }
             }
         },
+        "/contracts/{id}/analysis": {
+            "get": {
+                "description": "Retrieves the structured analysis JSON for a previously analyzed document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Get analysis results for a document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analysis results",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Document not found or no analysis available",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns the health status of the service",
@@ -302,6 +625,53 @@
         }
     },
     "definitions": {
+        "analysis.AnalyzeContractResult": {
+            "type": "object",
+            "properties": {
+                "analysis": {
+                    "$ref": "#/definitions/models.ContractAnalysis"
+                },
+                "confidence_score": {
+                    "type": "number"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "payment_obligations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnalysisMilestone"
+                    }
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "risk_assessment": {
+                    "$ref": "#/definitions/models.AnalysisRiskAssessment"
+                },
+                "summary": {
+                    "$ref": "#/definitions/models.ContractSummary"
+                },
+                "validation_issues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handlers.AnalyzeContractRequest": {
+            "type": "object",
+            "required": [
+                "contract_text"
+            ],
+            "properties": {
+                "contract_text": {
+                    "type": "string",
+                    "example": "This is a sample contract text..."
+                }
+            }
+        },
         "handlers.HealthResponse": {
             "type": "object",
             "properties": {
@@ -316,11 +686,59 @@
                 }
             }
         },
-        "models.ComplianceReport": {
+        "models.AnalysisIndividualRisk": {
             "type": "object",
             "properties": {
-                "is_compliant": {
-                    "type": "boolean"
+                "description": {
+                    "type": "string"
+                },
+                "party": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AnalysisMilestone": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "percentage": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.AnalysisRisk": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AnalysisRiskAssessment": {
+            "type": "object",
+            "properties": {
+                "compliance_score": {
+                    "type": "number"
                 },
                 "missing_clauses": {
                     "type": "array",
@@ -328,8 +746,11 @@
                         "type": "string"
                     }
                 },
-                "report": {
-                    "type": "string"
+                "risks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnalysisIndividualRisk"
+                    }
                 },
                 "suggestions": {
                     "type": "array",
@@ -342,66 +763,132 @@
         "models.Contract": {
             "type": "object",
             "properties": {
-                "compliance": {
-                    "$ref": "#/definitions/models.ComplianceReport"
-                },
-                "confidence_score": {
-                    "type": "number"
-                },
-                "contract_hash": {
-                    "type": "string"
-                },
-                "contract_type": {
-                    "type": "string"
+                "analysis": {
+                    "$ref": "#/definitions/models.ContractAnalysis"
                 },
                 "created_at": {
                     "type": "string"
                 },
-                "file_path": {
+                "filename": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "knowledge_id": {
+                "retention_days": {
+                    "description": "Default 1 year",
+                    "type": "integer"
+                },
+                "storage_path": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ContractAnalysis": {
+            "type": "object",
+            "properties": {
+                "buyer": {
+                    "type": "string"
+                },
+                "buyer_address": {
+                    "type": "string"
+                },
+                "buyer_country": {
+                    "type": "string"
+                },
+                "currency": {
                     "type": "string"
                 },
                 "milestones": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.Milestone"
+                        "$ref": "#/definitions/models.AnalysisMilestone"
                     }
                 },
-                "risks": {
+                "risk_factors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RiskAssessment"
+                        "$ref": "#/definitions/models.AnalysisRisk"
                     }
                 },
-                "status": {
-                    "$ref": "#/definitions/models.ContractStatus"
-                },
-                "summary": {
-                    "$ref": "#/definitions/models.ContractSummary"
-                },
-                "updated_at": {
+                "seller": {
                     "type": "string"
                 },
-                "validation": {
-                    "$ref": "#/definitions/models.ValidationResult"
+                "seller_address": {
+                    "type": "string"
+                },
+                "seller_country": {
+                    "type": "string"
+                },
+                "total_value": {
+                    "type": "number"
                 }
             }
         },
-        "models.ContractStatus": {
-            "type": "string",
-            "enum": [
-                "validated",
-                "analyzed"
-            ],
-            "x-enum-varnames": [
-                "Validated",
-                "Analyzed"
-            ]
+        "models.ContractElementsResult": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "obligations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ContractObligation"
+                    }
+                },
+                "parties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ContractParty"
+                    }
+                },
+                "terms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ContractTerm"
+                    }
+                }
+            }
+        },
+        "models.ContractObligation": {
+            "type": "object",
+            "properties": {
+                "deadline": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "party": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "e.g., \"payment\", \"delivery\", \"performance\"",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ContractParty": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "contact": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "e.g., \"buyer\", \"seller\", \"contractor\", \"client\"",
+                    "type": "string"
+                }
+            }
         },
         "models.ContractSummary": {
             "type": "object",
@@ -438,142 +925,80 @@
                 }
             }
         },
-        "models.Milestone": {
+        "models.ContractTerm": {
             "type": "object",
             "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "category": {
-                    "type": "string"
-                },
-                "contract_id": {
-                    "type": "string"
-                },
-                "dependencies": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "description": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "oracle_config": {
-                    "$ref": "#/definitions/models.OracleConfig"
-                },
-                "percentage": {
-                    "type": "number"
-                },
-                "sequence_order": {
-                    "type": "integer"
-                },
-                "trigger_condition": {
-                    "type": "string"
-                },
-                "verification_method": {
-                    "$ref": "#/definitions/models.VerificationMethod"
-                }
-            }
-        },
-        "models.OracleConfig": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string"
-                },
-                "endpoint": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.RiskAssessment": {
-            "type": "object",
-            "properties": {
-                "contract_id": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "industry_reference": {
-                    "type": "string"
-                },
-                "recommendation": {
-                    "type": "string"
-                },
-                "severity": {
-                    "$ref": "#/definitions/models.Severity"
                 },
                 "type": {
+                    "description": "e.g., \"payment\", \"termination\", \"warranty\"",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "e.g., amount, duration",
                     "type": "string"
                 }
             }
         },
-        "models.Severity": {
-            "type": "string",
-            "enum": [
-                "low",
-                "medium",
-                "high",
-                "critical"
-            ],
-            "x-enum-varnames": [
-                "Low",
-                "Medium",
-                "High",
-                "Critical"
-            ]
-        },
-        "models.ValidationResult": {
+        "repository.ContractAnalysisRecord": {
             "type": "object",
             "properties": {
-                "confidence": {
+                "analysis": {
+                    "$ref": "#/definitions/models.ContractAnalysis"
+                },
+                "confidence_score": {
                     "type": "number"
                 },
-                "contract_type": {
+                "contract_id": {
                     "type": "string"
                 },
-                "detected_elements": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "payment_obligations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnalysisMilestone"
+                    }
+                },
+                "payment_obligations_json": {
+                    "type": "string"
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "risk_assessment": {
+                    "$ref": "#/definitions/models.AnalysisRiskAssessment"
+                },
+                "risk_assessment_json": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/models.ContractSummary"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "validation_issues": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "is_valid_contract": {
-                    "type": "boolean"
-                },
-                "missing_elements": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "reason": {
+                "validation_issues_json": {
                     "type": "string"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
-        },
-        "models.VerificationMethod": {
-            "type": "string",
-            "enum": [
-                "manual",
-                "oracle",
-                "hybrid",
-                "api"
-            ],
-            "x-enum-varnames": [
-                "Manual",
-                "Oracle",
-                "Hybrid",
-                "API"
-            ]
         }
     }
 }

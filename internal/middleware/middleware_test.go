@@ -79,7 +79,7 @@ func TestCORS(t *testing.T) {
 
 		// Create middleware instance with a test logger
 		mw := mw.NewMiddleware(zap.NewNop())
-		
+
 		// Apply CORS middleware
 		handler := mw.CORS()
 		handler(c)
@@ -140,21 +140,21 @@ func TestRateLimit(t *testing.T) {
 	router.Use(func(c *gin.Context) {
 		// Use a fixed IP for testing
 		c.Request.RemoteAddr = "127.0.0.1:12345"
-		
+
 		limiterCtx, err := instance.Get(c.Request.Context(), c.ClientIP())
 		if err != nil {
 			c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 			return
 		}
-		
+
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", limiterCtx.Limit))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", limiterCtx.Remaining))
-		
+
 		if limiterCtx.Reached {
 			c.AbortWithStatusJSON(429, gin.H{"error": "too many requests"})
 			return
 		}
-		
+
 		c.Next()
 	})
 
@@ -263,25 +263,25 @@ func TestValidation(t *testing.T) {
 	})
 
 	tests := []struct {
-		name           string
-		body           string
+		name            string
+		body            string
 		expectedStatus  int
 		expectedMessage string
 	}{
 		{
-			name:          "valid request",
-			body:          `{"name":"John Doe","email":"john@example.com"}`,
+			name:           "valid request",
+			body:           `{"name":"John Doe","email":"john@example.com"}`,
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "missing name",
-			body:           `{"email":"john@example.com"}`,
+			name:            "missing name",
+			body:            `{"email":"john@example.com"}`,
 			expectedStatus:  http.StatusBadRequest,
 			expectedMessage: "Key: 'testStruct.Name' Error:Field validation for 'Name' failed on the 'required' tag",
 		},
 		{
-			name:           "invalid email",
-			body:           `{"name":"John","email":"invalid-email"}`,
+			name:            "invalid email",
+			body:            `{"name":"John","email":"invalid-email"}`,
 			expectedStatus:  http.StatusBadRequest,
 			expectedMessage: "Key: 'testStruct.Email' Error:Field validation for 'Email' failed on the 'email' tag",
 		},

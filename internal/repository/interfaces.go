@@ -48,12 +48,12 @@ type KnowledgeEntryRepository interface {
 
 // Entity models
 type Contract struct {
-	ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Title       string     `json:"title" gorm:"not null"`
-	Description string     `json:"description"`
-	Status      string     `json:"status" gorm:"not null"`
-	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	Title       string    `json:"title" gorm:"not null"`
+	Description string    `json:"description"`
+	Status      string    `json:"status" gorm:"not null"`
+	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 type Milestone struct {
@@ -67,10 +67,10 @@ type Milestone struct {
 }
 
 type RiskAssessment struct {
-	ID         uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ContractID uuid.UUID `json:"contract_id" gorm:"type:uuid;not null"`
-	RiskLevel  string    `json:"risk_level" gorm:"not null"`
-	Description string   `json:"description"`
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ContractID  uuid.UUID `json:"contract_id" gorm:"type:uuid;not null"`
+	RiskLevel   string    `json:"risk_level" gorm:"not null"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"contract-analysis-service/internal/models"
-	repo_mocks "contract-analysis-service/internal/repositories/mocks"
-	"contract-analysis-service/internal/services/document"
-	analysis_mocks "contract-analysis-service/internal/services/analysis/mocks"
 	storage_mocks "contract-analysis-service/internal/pkg/storage/mocks"
+	repo_mocks "contract-analysis-service/internal/repositories/mocks"
+	analysis_mocks "contract-analysis-service/internal/services/analysis/mocks"
+	"contract-analysis-service/internal/services/document"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ func TestDocumentService_Upload(t *testing.T) {
 		Size:     int64(len(fileContent)),
 	}
 
-	analysisMock.On("AnalyzeContract", mock.Anything, "this is a test file").Return(&models.ContractAnalysis{}, nil)  // Adjust return type
+	analysisMock.On("AnalyzeContract", mock.Anything, "this is a test file").Return(&models.ContractAnalysis{}, nil) // Adjust return type
 	storageMock.On("Save", mock.Anything, "test.txt").Return("/path/to/file.txt", nil)
 	contractRepoMock.On("Create", mock.AnythingOfType("*models.Contract")).Return(nil)
 

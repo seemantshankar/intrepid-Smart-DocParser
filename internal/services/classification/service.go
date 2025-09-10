@@ -23,8 +23,6 @@ type Service interface {
 	GetClassificationHistory(ctx context.Context, contractID string) ([]*models.ClassificationRecord, error)
 }
 
-
-
 // classificationService implements the Service interface.
 type classificationService struct {
 	llmService llm.Service
@@ -47,7 +45,7 @@ func (s *classificationService) ClassifyContract(ctx context.Context, documentTe
 	provider := "openrouter"
 
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",
@@ -83,7 +81,7 @@ func (s *classificationService) GetContractComplexity(ctx context.Context, docum
 	provider := "openrouter"
 
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",
@@ -119,7 +117,7 @@ func (s *classificationService) ClassifyByIndustry(ctx context.Context, document
 	provider := "openrouter"
 
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",

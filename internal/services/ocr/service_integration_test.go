@@ -23,14 +23,14 @@ func TestMain(m *testing.M) {
 	if err == nil {
 		// Load environment variables from .env file
 		_ = godotenv.Load(projectRoot + "/.env")
-		
+
 		// Copy OPENROUTER_API_KEY to OPENROUTER_API_KEY_TEST if it exists
 		// This ensures the test config can use the same API key
 		if apiKey := os.Getenv("OPENROUTER_API_KEY"); apiKey != "" {
 			os.Setenv("OPENROUTER_API_KEY_TEST", apiKey)
 		}
 	}
-	
+
 	// Run tests
 	os.Exit(m.Run())
 }
@@ -41,19 +41,19 @@ func findProjectRoot() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	for {
 		if _, err := os.Stat(dir + "/go.mod"); err == nil {
 			return dir, nil
 		}
-		
+
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			break
 		}
 		dir = parent
 	}
-	
+
 	return "", fmt.Errorf("could not find project root")
 }
 
@@ -62,7 +62,7 @@ func maskAPIKey(key string) string {
 	if len(key) <= 8 {
 		return "[too short to mask]"
 	}
-	
+
 	// Show first 4 and last 4 characters, mask the rest
 	return key[:4] + "..." + key[len(key)-4:]
 }
@@ -70,7 +70,7 @@ func maskAPIKey(key string) string {
 // debuggingClient wraps an external.Client to log request/response details
 type debuggingClient struct {
 	baseClient external.Client
-	t *testing.T
+	t          *testing.T
 }
 
 // ExecuteRequest implements external.Client interface
@@ -78,7 +78,7 @@ func (d *debuggingClient) ExecuteRequest(ctx context.Context, req *external.Requ
 	// Log request details
 	d.t.Logf("Request URL: %s", req.URL)
 	d.t.Logf("Request Method: %s", req.Method)
-	
+
 	// Log request headers
 	d.t.Log("Request Headers:")
 	for k, v := range req.Headers {
@@ -88,23 +88,23 @@ func (d *debuggingClient) ExecuteRequest(ctx context.Context, req *external.Requ
 			d.t.Logf("  %s: %s", k, v)
 		}
 	}
-	
+
 	// Log request body
 	d.t.Logf("Request Body (first 1000 chars): %s", truncateString(string(req.Body), 1000))
-	
+
 	// Execute the request
 	resp, err := d.baseClient.ExecuteRequest(ctx, req)
-	
+
 	// Log response or error
 	if err != nil {
 		d.t.Logf("Request failed with error: %v", err)
 		return nil, err
 	}
-	
+
 	// Log response details
 	d.t.Logf("Response Status: %d", resp.StatusCode)
 	d.t.Logf("Response Body (first 1000 chars): %s", truncateString(string(resp.Body), 1000))
-	
+
 	return resp, nil
 }
 
@@ -131,15 +131,15 @@ func TestOCRService_Integration_ExtractTextFromImage(t *testing.T) {
 	// Find project root and load config
 	projectRoot, err := findProjectRoot()
 	require.NoError(t, err, "Failed to find project root")
-	
+
 	cfg, err := configs.LoadConfig(filepath.Join(projectRoot, "config_test.yaml"))
 	require.NoError(t, err, "Failed to load test config")
-	
+
 	// Check if API key is loaded from environment variable
 	apiKeyFromEnv := os.Getenv("OPENROUTER_API_KEY")
 	t.Logf("API Key from env: %s", maskAPIKey(apiKeyFromEnv))
 	t.Logf("API Key from config: %s", maskAPIKey(cfg.OCR.APIKey))
-	
+
 	// Override config with environment variable if it exists
 	if apiKeyFromEnv != "" {
 		cfg.OCR.APIKey = apiKeyFromEnv

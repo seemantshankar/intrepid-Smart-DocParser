@@ -20,6 +20,7 @@ import (
 
 // Client defines the interface for external service clients
 // with built-in resilience patterns
+//
 //go:generate mockery --name=Client --output=./mocks --filename=client_mock.go
 type Client interface {
 	ExecuteRequest(ctx context.Context, req *Request) (*Response, error)
@@ -97,7 +98,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, req *Request) (*Respons
 			}
 			return nil
 		}, c.newExponentialBackoff())
-		
+
 		if retryErr != nil {
 			return nil, retryErr
 		}
@@ -197,34 +198,34 @@ func (c *HTTPClient) doActualRequest(ctx context.Context, req *Request) (*Respon
 
 // isTransientError determines if an error is transient
 func isTransientError(err error) bool {
-    // Treat common network/timeouts as transient
-    var nerr net.Error
-    if errors.As(err, &nerr) {
-        // Timeout is generally transient
-        if nerr.Timeout() {
-            return true
-        }
-        // Some net errors may be temporary (historical API)
-        type temporary interface{ Temporary() bool }
-        if te, ok := any(nerr).(temporary); ok && te.Temporary() {
-            return true
-        }
-    }
+	// Treat common network/timeouts as transient
+	var nerr net.Error
+	if errors.As(err, &nerr) {
+		// Timeout is generally transient
+		if nerr.Timeout() {
+			return true
+		}
+		// Some net errors may be temporary (historical API)
+		type temporary interface{ Temporary() bool }
+		if te, ok := any(nerr).(temporary); ok && te.Temporary() {
+			return true
+		}
+	}
 
-    // url.Error also exposes Timeout()
-    var uerr *url.Error
-    if errors.As(err, &uerr) {
-        if uerr.Timeout() {
-            return true
-        }
-    }
+	// url.Error also exposes Timeout()
+	var uerr *url.Error
+	if errors.As(err, &uerr) {
+		if uerr.Timeout() {
+			return true
+		}
+	}
 
-    // Context deadline exceeded
-    if errors.Is(err, context.DeadlineExceeded) {
-        return true
-    }
+	// Context deadline exceeded
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
 
-    return false
+	return false
 }
 
 func (c *HTTPClient) newExponentialBackoff() *backoff.ExponentialBackOff {

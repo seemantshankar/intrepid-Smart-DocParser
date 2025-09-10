@@ -14,6 +14,7 @@ import (
 )
 
 // Service defines the interface for the OCR service.
+//
 //go:generate mockery --name=Service --output=./mocks --filename=service_mock.go
 type Service interface {
 	ExtractTextFromImage(ctx context.Context, imagePath string) (*OCRResult, error)
@@ -44,9 +45,9 @@ func NewOCRService(client external.Client, apiKey string, fallbackModels []strin
 		model:          "qwen/qwen2.5-vl-32b-instruct:free",
 		fallbackModels: fallbackModels,
 		// Use a relative path; the external HTTP client will prepend BaseURL
-		apiURL:         "/chat/completions",
-		validator:      validator,
-		metrics:        metrics,
+		apiURL:    "/chat/completions",
+		validator: validator,
+		metrics:   metrics,
 	}
 }
 
@@ -114,8 +115,8 @@ func (s *ocrService) tryExtractWithModel(ctx context.Context, model, imageURL st
 
 	// Execute request
 	resp, err := s.client.ExecuteRequest(ctx, &external.Request{
-		Method:      "POST",
-		URL:         s.apiURL,
+		Method: "POST",
+		URL:    s.apiURL,
 		Headers: map[string]string{
 			"Authorization": "Bearer " + s.apiKey,
 			"Content-Type":  "application/json",

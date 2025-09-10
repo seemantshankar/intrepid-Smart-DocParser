@@ -1,4 +1,35 @@
 definitions:
+  analysis.AnalyzeContractResult:
+    properties:
+      analysis:
+        $ref: '#/definitions/models.ContractAnalysis'
+      confidence_score:
+        type: number
+      contract_id:
+        type: string
+      payment_obligations:
+        items:
+          $ref: '#/definitions/models.AnalysisMilestone'
+        type: array
+      processed_at:
+        type: string
+      risk_assessment:
+        $ref: '#/definitions/models.AnalysisRiskAssessment'
+      summary:
+        $ref: '#/definitions/models.ContractSummary'
+      validation_issues:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.AnalyzeContractRequest:
+    properties:
+      contract_text:
+        example: This is a sample contract text...
+        type: string
+    required:
+    - contract_text
+    type: object
   handlers.HealthResponse:
     properties:
       details:
@@ -8,16 +39,49 @@ definitions:
       status:
         type: string
     type: object
-  models.ComplianceReport:
+  models.AnalysisIndividualRisk:
     properties:
-      is_compliant:
-        type: boolean
+      description:
+        type: string
+      party:
+        type: string
+      recommendation:
+        type: string
+      severity:
+        type: string
+      type:
+        type: string
+    type: object
+  models.AnalysisMilestone:
+    properties:
+      amount:
+        type: number
+      description:
+        type: string
+      percentage:
+        type: number
+    type: object
+  models.AnalysisRisk:
+    properties:
+      description:
+        type: string
+      severity:
+        type: string
+      type:
+        type: string
+    type: object
+  models.AnalysisRiskAssessment:
+    properties:
+      compliance_score:
+        type: number
       missing_clauses:
         items:
           type: string
         type: array
-      report:
-        type: string
+      risks:
+        items:
+          $ref: '#/definitions/models.AnalysisIndividualRisk'
+        type: array
       suggestions:
         items:
           type: string
@@ -25,47 +89,90 @@ definitions:
     type: object
   models.Contract:
     properties:
-      compliance:
-        $ref: '#/definitions/models.ComplianceReport'
-      confidence_score:
-        type: number
-      contract_hash:
-        type: string
-      contract_type:
-        type: string
+      analysis:
+        $ref: '#/definitions/models.ContractAnalysis'
       created_at:
         type: string
-      file_path:
+      filename:
         type: string
       id:
         type: string
-      knowledge_id:
+      retention_days:
+        description: Default 1 year
+        type: integer
+      storage_path:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.ContractAnalysis:
+    properties:
+      buyer:
+        type: string
+      buyer_address:
+        type: string
+      buyer_country:
+        type: string
+      currency:
         type: string
       milestones:
         items:
-          $ref: '#/definitions/models.Milestone'
+          $ref: '#/definitions/models.AnalysisMilestone'
         type: array
-      risks:
+      risk_factors:
         items:
-          $ref: '#/definitions/models.RiskAssessment'
+          $ref: '#/definitions/models.AnalysisRisk'
         type: array
-      status:
-        $ref: '#/definitions/models.ContractStatus'
-      summary:
-        $ref: '#/definitions/models.ContractSummary'
-      updated_at:
+      seller:
         type: string
-      validation:
-        $ref: '#/definitions/models.ValidationResult'
+      seller_address:
+        type: string
+      seller_country:
+        type: string
+      total_value:
+        type: number
     type: object
-  models.ContractStatus:
-    enum:
-    - validated
-    - analyzed
-    type: string
-    x-enum-varnames:
-    - Validated
-    - Analyzed
+  models.ContractElementsResult:
+    properties:
+      confidence:
+        type: number
+      obligations:
+        items:
+          $ref: '#/definitions/models.ContractObligation'
+        type: array
+      parties:
+        items:
+          $ref: '#/definitions/models.ContractParty'
+        type: array
+      terms:
+        items:
+          $ref: '#/definitions/models.ContractTerm'
+        type: array
+    type: object
+  models.ContractObligation:
+    properties:
+      deadline:
+        type: string
+      description:
+        type: string
+      party:
+        type: string
+      type:
+        description: e.g., "payment", "delivery", "performance"
+        type: string
+    type: object
+  models.ContractParty:
+    properties:
+      address:
+        type: string
+      contact:
+        type: string
+      name:
+        type: string
+      role:
+        description: e.g., "buyer", "seller", "contractor", "client"
+        type: string
+    type: object
   models.ContractSummary:
     properties:
       buyer_address:
@@ -89,103 +196,208 @@ definitions:
       total_value:
         type: number
     type: object
-  models.Milestone:
+  models.ContractTerm:
     properties:
-      amount:
-        type: number
-      category:
-        type: string
-      contract_id:
-        type: string
-      dependencies:
-        items:
-          type: string
-        type: array
       description:
         type: string
-      id:
-        type: string
-      oracle_config:
-        $ref: '#/definitions/models.OracleConfig'
-      percentage:
-        type: number
-      sequence_order:
-        type: integer
-      trigger_condition:
-        type: string
-      verification_method:
-        $ref: '#/definitions/models.VerificationMethod'
-    type: object
-  models.OracleConfig:
-    properties:
-      api_key:
-        type: string
-      endpoint:
-        type: string
-    type: object
-  models.RiskAssessment:
-    properties:
-      contract_id:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      industry_reference:
-        type: string
-      recommendation:
-        type: string
-      severity:
-        $ref: '#/definitions/models.Severity'
       type:
+        description: e.g., "payment", "termination", "warranty"
+        type: string
+      value:
+        description: e.g., amount, duration
         type: string
     type: object
-  models.Severity:
-    enum:
-    - low
-    - medium
-    - high
-    - critical
-    type: string
-    x-enum-varnames:
-    - Low
-    - Medium
-    - High
-    - Critical
-  models.ValidationResult:
+  repository.ContractAnalysisRecord:
     properties:
-      confidence:
+      analysis:
+        $ref: '#/definitions/models.ContractAnalysis'
+      confidence_score:
         type: number
-      contract_type:
+      contract_id:
         type: string
-      detected_elements:
+      created_at:
+        type: string
+      id:
+        type: string
+      payment_obligations:
+        items:
+          $ref: '#/definitions/models.AnalysisMilestone'
+        type: array
+      payment_obligations_json:
+        type: string
+      processed_at:
+        type: string
+      risk_assessment:
+        $ref: '#/definitions/models.AnalysisRiskAssessment'
+      risk_assessment_json:
+        type: string
+      summary:
+        $ref: '#/definitions/models.ContractSummary'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      validation_issues:
         items:
           type: string
         type: array
-      is_valid_contract:
-        type: boolean
-      missing_elements:
-        items:
-          type: string
-        type: array
-      reason:
+      validation_issues_json:
         type: string
+      version:
+        type: integer
     type: object
-  models.VerificationMethod:
-    enum:
-    - manual
-    - oracle
-    - hybrid
-    - api
-    type: string
-    x-enum-varnames:
-    - Manual
-    - Oracle
-    - Hybrid
-    - API
 info:
   contact: {}
 paths:
+  /analysis/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves contract analysis by its unique identifier
+      parameters:
+      - description: Analysis ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Contract analysis record
+          schema:
+            $ref: '#/definitions/repository.ContractAnalysisRecord'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get analysis by ID
+      tags:
+      - Contract Analysis
+  /contract-analyses:
+    get:
+      consumes:
+      - application/json
+      description: Lists contract analyses with optional filtering and pagination
+      parameters:
+      - default: 20
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of contract analyses
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List contract analyses
+      tags:
+      - Contract Analysis
+  /contract-analysis/{contract_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves comprehensive analysis results for a specific contract
+      parameters:
+      - description: Contract ID
+        in: path
+        name: contract_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Contract analysis record
+          schema:
+            $ref: '#/definitions/repository.ContractAnalysisRecord'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get contract analysis by contract ID
+      tags:
+      - Contract Analysis
+  /contracts/{document_id}/elements:
+    get:
+      description: Analyzes a stored document to extract detailed contract elements
+        including parties, obligations, and terms
+      parameters:
+      - description: Document ID
+        in: path
+        name: document_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Contract elements detection result
+          schema:
+            $ref: '#/definitions/models.ContractElementsResult'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Document not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Detect contract elements
+      tags:
+      - Documents
   /contracts/{id}:
     delete:
       description: Delete a single document by its unique ID. This will remove the
@@ -246,6 +458,39 @@ paths:
       summary: Get a document by ID
       tags:
       - Documents
+  /contracts/{id}/analysis:
+    get:
+      description: Retrieves the structured analysis JSON for a previously analyzed
+        document.
+      parameters:
+      - description: Document ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Analysis results
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Document not found or no analysis available
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get analysis results for a document
+      tags:
+      - Documents
   /contracts/analyze:
     post:
       consumes:
@@ -282,6 +527,42 @@ paths:
       summary: Analyze a contract document
       tags:
       - Analysis
+  /contracts/analyze-comprehensive:
+    post:
+      consumes:
+      - application/json
+      description: Performs comprehensive contract analysis using LLM including summary
+        extraction, payment obligations identification, percentage-based calculations,
+        and risk assessment
+      parameters:
+      - description: Contract text to analyze
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AnalyzeContractRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Comprehensive analysis result
+          schema:
+            $ref: '#/definitions/analysis.AnalyzeContractResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Analyze contract comprehensively
+      tags:
+      - Contract Analysis
   /contracts/upload:
     post:
       consumes:

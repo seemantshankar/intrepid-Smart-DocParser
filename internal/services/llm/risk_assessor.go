@@ -30,7 +30,7 @@ func (r *RiskAssessor) AssessRisks(ctx context.Context, provider, contractText, 
 
 	// Create request payload
 	payload := map[string]interface{}{
-		"model": "gpt-4o",
+		"model": "openai/gpt-5-nano",
 		"messages": []map[string]interface{}{
 			{
 				"role":    "system",

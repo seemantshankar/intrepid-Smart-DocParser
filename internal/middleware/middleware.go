@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"time"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/zap"
@@ -12,6 +11,7 @@ import (
 	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"go.uber.org/zap"
 	"strings"
+	"time"
 )
 
 // Middleware holds all middleware components
@@ -45,10 +45,10 @@ func (m *Middleware) RateLimit() gin.HandlerFunc {
 		Period: 1 * time.Minute,
 		Limit:  100,
 	}
-	
+
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
-	
+
 	return func(c *gin.Context) {
 		context, err := instance.Get(c.Request.Context(), c.ClientIP())
 		if err != nil {
@@ -56,15 +56,15 @@ func (m *Middleware) RateLimit() gin.HandlerFunc {
 			c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 			return
 		}
-		
+
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", context.Limit))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", context.Remaining))
-		
+
 		if context.Reached {
 			c.AbortWithStatusJSON(429, gin.H{"error": "too many requests"})
 			return
 		}
-		
+
 		c.Next()
 	}
 }

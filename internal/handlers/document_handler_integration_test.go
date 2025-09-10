@@ -25,10 +25,10 @@ import (
 	"contract-analysis-service/internal/pkg/database"
 	"contract-analysis-service/internal/pkg/storage"
 	"contract-analysis-service/internal/repositories/sqlite"
-	"contract-analysis-service/internal/services/document"
-	llmclient "contract-analysis-service/internal/services/llm/client"
-	"contract-analysis-service/internal/services/llm"
 	"contract-analysis-service/internal/services/analysis"
+	"contract-analysis-service/internal/services/document"
+	"contract-analysis-service/internal/services/llm"
+	llmclient "contract-analysis-service/internal/services/llm/client"
 	"contract-analysis-service/internal/services/validation"
 	"go.uber.org/zap"
 )
@@ -38,23 +38,23 @@ func setupTestRouter() *gin.Engine {
 	if err != nil {
 		panic("Failed to load config: " + err.Error())
 	}
-	
+
 	logger := zap.NewNop()
 	db, err := database.NewDB(cfg.Database)
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())
 	}
-	
+
 	contractRepo := sqlite.NewContractRepository(db)
 	fileStorage, err := storage.NewLocalStorage("../../test-uploads")
 	if err != nil {
 		panic("Failed to create storage: " + err.Error())
 	}
-	
+
 	llmService := llm.NewLLMService(logger)
 	llmclient.AddOpenRouterClientToService(llmService, cfg)
 	analysisService := analysis.NewService(llmService)
-	
+
 	// Create validation repositories
 	validationRepo := sqlite.NewValidationRepository(db)
 	validationAuditRepo := sqlite.NewValidationAuditRepository(db)
@@ -132,7 +132,7 @@ func TestDocumentHandler_Integration_UploadAndGet_Unauthorized(t *testing.T) {
 	// Generate JWT token for user1
 	token1, _ := generateToken("user1", "test-secret-key")
 	token1 = "Bearer " + token1
-	
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("file", "test.txt")
@@ -155,7 +155,7 @@ func TestDocumentHandler_Integration_UploadAndGet_Unauthorized(t *testing.T) {
 	// Generate JWT token for user2 (different user)
 	token2, _ := generateToken("user2", "test-secret-key")
 	token2 = "Bearer " + token2
-	
+
 	reqGet := httptest.NewRequest("GET", "/documents/"+documentID, nil)
 	reqGet.Header.Set("Authorization", token2)
 	w = httptest.NewRecorder()
@@ -173,32 +173,32 @@ func TestDocumentHandler_Integration_LifecycleCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}
-	
+
 	logger := zap.NewNop()
 	db, err := database.NewDB(cfg.Database)
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
-	
+
 	contractRepo := sqlite.NewContractRepository(db)
 	fileStorage, err2 := storage.NewLocalStorage("../../test-uploads")
 	if err2 != nil {
 		t.Fatalf("Failed to create storage: %v", err2)
 	}
-	
+
 	llmService := llm.NewLLMService(logger)
 	llmclient.AddOpenRouterClientToService(llmService, cfg)
 	analysisService := analysis.NewService(llmService)
 	docService := document.NewDocumentService(contractRepo, fileStorage, analysisService, logger)
-	
+
 	// Create a contract with old CreatedAt
 	oldTime := time.Now().Add(-time.Duration(366*24) * time.Hour) // older than 365 days
 	contract := &models.Contract{
-		ID:           uuid.New().String(),
-		UserID:       "test-user",
-		Filename:     "old-contract.pdf",
-		StoragePath:  "/tmp/old-contract.pdf",
-		CreatedAt:    oldTime,
+		ID:            uuid.New().String(),
+		UserID:        "test-user",
+		Filename:      "old-contract.pdf",
+		StoragePath:   "/tmp/old-contract.pdf",
+		CreatedAt:     oldTime,
 		RetentionDays: 365,
 	}
 	err3 := contractRepo.Create(contract)

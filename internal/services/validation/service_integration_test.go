@@ -2,7 +2,6 @@ package validation_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -139,7 +138,7 @@ Sarah`,
 
 	// Try to add real PDF contract test
 	contractPath := "../../../uploads/Publisher agreement.pdf"
-	contractData, err := ioutil.ReadFile(contractPath)
+	contractData, err := os.ReadFile(contractPath)
 	if err == nil {
 		// Check if PDF is too large for API (limit to ~100KB to avoid token limits)
 		if len(contractData) < 100000 {
@@ -194,7 +193,7 @@ Sarah`,
 			} else if strings.Contains(tt.name, "Real PDF") {
 				// For real PDF, expect some elements to be detected
 				require.NotEmpty(t, result.DetectedElements, "Real PDF should have some detected elements")
-				t.Logf("Real PDF validation completed - Type: %s, Valid: %t, Confidence: %.2f", 
+				t.Logf("Real PDF validation completed - Type: %s, Valid: %t, Confidence: %.2f",
 					result.ContractType, result.IsValidContract, result.Confidence)
 			}
 		})

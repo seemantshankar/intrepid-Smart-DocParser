@@ -74,7 +74,7 @@ func SetupTestDatabase(t *testing.T) *TestDB {
 	}
 
 	dsn := fmt.Sprintf("host=%s port=%d user=testuser password=testpass dbname=testdb sslmode=disable", host, port.Int())
-	
+
 	// Add retry logic for database connection
 	var db *gorm.DB
 	maxRetries := 5
@@ -90,12 +90,12 @@ func SetupTestDatabase(t *testing.T) *TestDB {
 				}
 			}
 		}
-		
+
 		if i == maxRetries-1 {
 			_ = pg.Terminate(ctx)
 			t.Fatalf("failed to connect to database after %d retries: %v", maxRetries, err)
 		}
-		
+
 		time.Sleep(2 * time.Second)
 	}
 

@@ -24,7 +24,7 @@ func ValidationMiddleware(validate *validator.Validate) gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err})
 				return
 			}
-			
+
 			if err := validate.Struct(body); err != nil {
 				validationErrors := err.(validator.ValidationErrors)
 				errs := make([]ValidationError, len(validationErrors))
@@ -38,9 +38,9 @@ func ValidationMiddleware(validate *validator.Validate) gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		c.Next()
-		
+
 		// Validate response if needed
 		if len(c.Errors) > 0 {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

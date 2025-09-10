@@ -15,11 +15,11 @@ import (
 
 // Config holds the configuration for OpenTelemetry
 type Config struct {
-	ServiceName        string
-	ServiceVersion     string
-	Environment        string
-	JaegerEndpoint     string
-	SamplingRatio      float64
+	ServiceName    string
+	ServiceVersion string
+	Environment    string
+	JaegerEndpoint string
+	SamplingRatio  float64
 }
 
 // InitTracer initializes and configures the OpenTelemetry tracer

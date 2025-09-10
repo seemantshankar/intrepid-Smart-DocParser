@@ -200,9 +200,9 @@ func TestContractRepository(t *testing.T) {
 		// Create a contract with a specific title
 		testTitle := "GetByTitle Test Contract"
 		contract := &repository.Contract{
-			Title: testTitle,
+			Title:       testTitle,
 			Description: "Contract for GetByTitle test",
-			Status: "active",
+			Status:      "active",
 		}
 		err := repos.Contract.Create(ctx, contract)
 		require.NoError(t, err)

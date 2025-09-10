@@ -31,11 +31,11 @@ type Service interface {
 
 // validationService implements the Service interface.
 type validationService struct {
-	llmService         llm.Service
-	logger             *zap.Logger
-	validationRepo     repositories.ValidationRepository
-	auditRepo          repositories.ValidationAuditRepository
-	feedbackRepo       repositories.ValidationFeedbackRepository
+	llmService     llm.Service
+	logger         *zap.Logger
+	validationRepo repositories.ValidationRepository
+	auditRepo      repositories.ValidationAuditRepository
+	feedbackRepo   repositories.ValidationFeedbackRepository
 }
 
 // NewValidationService creates a new validation service instance.
@@ -59,7 +59,7 @@ func (s *validationService) ValidateContract(ctx context.Context, documentText s
 
 	// Prepare payload for the LLM request
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",
@@ -148,7 +148,7 @@ func (s *validationService) DetectContractElements(ctx context.Context, document
 
 	// Prepare payload for the LLM request
 	payload := map[string]interface{}{
-		"model": "qwen/qwen-2.5-vl-72b-instruct:free",
+		"model": "openai/gpt-5-nano",
 		"messages": []interface{}{
 			map[string]interface{}{
 				"role":    "user",
@@ -233,7 +233,7 @@ func parseElementDetectionResponse(body []byte) (*models.ContractElementsResult,
 
 	// Extract detected elements
 	result := &models.ContractElementsResult{}
-	
+
 	if parties, ok := response["parties"].([]interface{}); ok {
 		for _, party := range parties {
 			if partyMap, ok := party.(map[string]interface{}); ok {
@@ -380,31 +380,31 @@ func (s *validationService) GetValidationAuditTrail(ctx context.Context, validat
 // CalculateConfidenceScore computes an enhanced confidence score based on multiple factors
 func (s *validationService) CalculateConfidenceScore(ctx context.Context, result *models.ValidationResult, elements *models.ContractElementsResult) float64 {
 	factors := s.GetConfidenceFactors(ctx, result, elements)
-	
+
 	// Weighted average of confidence factors
 	weights := map[string]float64{
-		"llm_confidence":      0.4,  // Base LLM confidence
-		"element_completeness": 0.3,  // How many required elements are present
-		"contract_structure":  0.2,  // Structural integrity of the contract
-		"content_quality":     0.1,  // Text quality and clarity
+		"llm_confidence":       0.4, // Base LLM confidence
+		"element_completeness": 0.3, // How many required elements are present
+		"contract_structure":   0.2, // Structural integrity of the contract
+		"content_quality":      0.1, // Text quality and clarity
 	}
-	
+
 	totalScore := 0.0
 	totalWeight := 0.0
-	
+
 	for factor, score := range factors {
 		if weight, exists := weights[factor]; exists {
 			totalScore += score * weight
 			totalWeight += weight
 		}
 	}
-	
+
 	if totalWeight == 0 {
 		return result.Confidence // Fallback to original confidence
 	}
-	
+
 	finalScore := totalScore / totalWeight
-	
+
 	// Ensure score is within valid range [0.0, 1.0]
 	if finalScore < 0.0 {
 		return 0.0
@@ -412,23 +412,23 @@ func (s *validationService) CalculateConfidenceScore(ctx context.Context, result
 	if finalScore > 1.0 {
 		return 1.0
 	}
-	
+
 	return finalScore
 }
 
 // GetConfidenceFactors returns individual confidence factors for transparency
 func (s *validationService) GetConfidenceFactors(ctx context.Context, result *models.ValidationResult, elements *models.ContractElementsResult) map[string]float64 {
 	factors := make(map[string]float64)
-	
+
 	// Base LLM confidence
 	factors["llm_confidence"] = result.Confidence
-	
+
 	// Element completeness factor
 	requiredElements := []string{
 		"parties_identification", "offer_and_acceptance", "consideration",
 		"legal_capacity", "mutual_consent", "lawful_purpose",
 	}
-	
+
 	detectedCount := 0
 	for _, required := range requiredElements {
 		for _, detected := range result.DetectedElements {
@@ -438,9 +438,9 @@ func (s *validationService) GetConfidenceFactors(ctx context.Context, result *mo
 			}
 		}
 	}
-	
+
 	factors["element_completeness"] = float64(detectedCount) / float64(len(requiredElements))
-	
+
 	// Contract structure factor (based on missing elements)
 	missingCount := len(result.MissingElements)
 	if missingCount == 0 {
@@ -452,7 +452,7 @@ func (s *validationService) GetConfidenceFactors(ctx context.Context, result *mo
 			factors["contract_structure"] = 0.0
 		}
 	}
-	
+
 	// Content quality factor (based on elements confidence if available)
 	if elements != nil {
 		factors["content_quality"] = elements.Confidence
@@ -460,7 +460,7 @@ func (s *validationService) GetConfidenceFactors(ctx context.Context, result *mo
 		// Default to moderate confidence if no elements data
 		factors["content_quality"] = 0.7
 	}
-	
+
 	return factors
 }
 
@@ -471,42 +471,42 @@ func (s *validationService) UpdateConfidenceBasedOnFeedback(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to get validation record: %w", err)
 	}
-	
+
 	// Get feedback for this validation
 	feedbacks, err := s.feedbackRepo.GetByValidationID(validationID)
 	if err != nil {
 		return fmt.Errorf("failed to get feedback: %w", err)
 	}
-	
+
 	if len(feedbacks) == 0 {
 		return nil // No feedback to process
 	}
-	
+
 	// Calculate feedback adjustment
 	totalRating := 0
 	feedbackCount := 0
-	
+
 	for _, feedback := range feedbacks {
 		if feedback.FeedbackType == "accuracy" {
 			totalRating += feedback.Rating
 			feedbackCount++
 		}
 	}
-	
+
 	if feedbackCount == 0 {
 		return nil // No accuracy feedback
 	}
-	
+
 	// Calculate average rating (1-5 scale)
 	averageRating := float64(totalRating) / float64(feedbackCount)
-	
+
 	// Convert to confidence adjustment (-0.2 to +0.2 range)
 	// Rating 3 = no change, Rating 5 = +0.2, Rating 1 = -0.2
 	adjustment := (averageRating - 3.0) * 0.1
-	
+
 	// Apply adjustment to confidence
 	newConfidence := validation.Result.Confidence + adjustment
-	
+
 	// Ensure confidence stays within valid range
 	if newConfidence < 0.0 {
 		newConfidence = 0.0
@@ -514,16 +514,16 @@ func (s *validationService) UpdateConfidenceBasedOnFeedback(ctx context.Context,
 	if newConfidence > 1.0 {
 		newConfidence = 1.0
 	}
-	
+
 	// Update validation record
 	validation.Result.Confidence = newConfidence
 	validation.Version++
-	
+
 	err = s.validationRepo.Update(validation)
 	if err != nil {
 		return fmt.Errorf("failed to update validation record: %w", err)
 	}
-	
+
 	// Create audit log
 	auditLog := &models.ValidationAuditLog{
 		ID:              uuid.New().String(),
@@ -536,6 +536,6 @@ func (s *validationService) UpdateConfidenceBasedOnFeedback(ctx context.Context,
 		Reason:          "Feedback-based confidence adjustment",
 		CreatedAt:       time.Now(),
 	}
-	
+
 	return s.auditRepo.Create(auditLog)
 }

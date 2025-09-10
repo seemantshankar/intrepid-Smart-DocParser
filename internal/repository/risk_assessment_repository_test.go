@@ -115,7 +115,7 @@ func TestRiskAssessmentRepository(t *testing.T) {
 		contract2Assessments, err := repos.RiskAssessment.GetByContractID(ctx, contract2.ID, 0, 0)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, len(contract2Assessments), 1)
-		
+
 		// Verify at least one assessment belongs to contract2
 		var hasContract2Assessment bool
 		for _, assessment := range contract2Assessments {

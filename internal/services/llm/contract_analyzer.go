@@ -11,7 +11,7 @@ import (
 
 // ContractAnalyzer handles contract analysis using LLM APIs
 type ContractAnalyzer struct {
-	service    Service
+	service      Service
 	promptEngine *PromptEngine
 }
 
@@ -27,29 +27,29 @@ func NewContractAnalyzer(service Service, promptEngine *PromptEngine) *ContractA
 func (c *ContractAnalyzer) AnalyzeContract(ctx context.Context, provider, contractText string) (*models.ContractAnalysis, error) {
 	// Build analysis prompt
 	prompt := c.promptEngine.BuildContractAnalysisPrompt(contractText)
-	
+
 	// Create request payload for LLM
 	payload := map[string]interface{}{
-		"model": "gpt-4o",
+		"model": "openai/gpt-5-nano",
 		"messages": []map[string]interface{}{
 			{
 				"role":    "system",
 				"content": "You are a legal document analysis expert. Always respond with valid JSON.",
 			},
 			{
-				"role":    "user", 
+				"role":    "user",
 				"content": prompt,
 			},
 		},
 		"temperature": 0.1,
 		"max_tokens":  2000,
 	}
-	
+
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	
+
 	// Execute request through LLM service
 	resp, err := c.service.ExecuteRequest(ctx, provider, &external.Request{
 		Method:  "POST",
@@ -60,7 +60,7 @@ func (c *ContractAnalyzer) AnalyzeContract(ctx context.Context, provider, contra
 	if err != nil {
 		return nil, fmt.Errorf("LLM API request failed: %w", err)
 	}
-	
+
 	// Parse response
 	return c.parseAnalysisResponse(resp.Body)
 }
@@ -74,21 +74,21 @@ func (c *ContractAnalyzer) parseAnalysisResponse(body []byte) (*models.ContractA
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	
+
 	if err := json.Unmarshal(body, &openAIResp); err != nil {
 		return nil, fmt.Errorf("failed to parse LLM response: %w", err)
 	}
-	
+
 	if len(openAIResp.Choices) == 0 {
 		return nil, fmt.Errorf("no choices in LLM response")
 	}
-	
+
 	var analysis models.ContractAnalysis
 	content := openAIResp.Choices[0].Message.Content
-	
+
 	if err := json.Unmarshal([]byte(content), &analysis); err != nil {
 		return nil, fmt.Errorf("failed to parse contract analysis: %w", err)
 	}
-	
+
 	return &analysis, nil
 }

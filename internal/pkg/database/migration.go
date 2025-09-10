@@ -1,10 +1,10 @@
 package database
 
 import (
-	"gorm.io/gorm"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"gorm.io/gorm"
 )
 
 // RunMigrations runs database migrations from the specified path

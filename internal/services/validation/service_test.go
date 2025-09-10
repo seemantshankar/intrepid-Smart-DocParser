@@ -131,9 +131,9 @@ func TestValidationService_CalculateConfidenceScore(t *testing.T) {
 
 	// Test case 2: Lower confidence with missing elements
 	result2 := &models.ValidationResult{
-		IsValidContract: true,
-		Confidence:      0.6,
-		ContractType:    "Service Agreement",
+		IsValidContract:  true,
+		Confidence:       0.6,
+		ContractType:     "Service Agreement",
 		DetectedElements: []string{"parties_identification", "consideration"},
 		MissingElements:  []string{"offer_and_acceptance", "legal_capacity"},
 	}
@@ -155,8 +155,8 @@ func TestValidationService_GetConfidenceFactors(t *testing.T) {
 	validationService := validation.NewValidationService(llmMock, logger, validationRepoMock, auditRepoMock, feedbackRepoMock)
 
 	result := &models.ValidationResult{
-		IsValidContract: true,
-		Confidence:      0.85,
+		IsValidContract:  true,
+		Confidence:       0.85,
 		DetectedElements: []string{"parties_identification", "consideration", "legal_capacity"},
 		MissingElements:  []string{"offer_and_acceptance"},
 	}
@@ -177,7 +177,7 @@ func TestValidationService_GetConfidenceFactors(t *testing.T) {
 	assert.Equal(t, 0.85, factors["llm_confidence"])
 	assert.Equal(t, 0.5, factors["element_completeness"]) // 3 out of 6 required elements
 	assert.Equal(t, 0.9, factors["contract_structure"])   // 1 missing element = 1.0 - 0.1
-	assert.Equal(t, 0.8, factors["content_quality"])     // From elements confidence
+	assert.Equal(t, 0.8, factors["content_quality"])      // From elements confidence
 }
 
 func TestValidationService_UpdateConfidenceBasedOnFeedback(t *testing.T) {

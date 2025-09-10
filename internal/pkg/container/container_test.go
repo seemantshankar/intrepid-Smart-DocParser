@@ -1,10 +1,10 @@
 package container
 
 import (
-	"testing"
 	"context"
 	"database/sql"
 	"fmt"
+	"testing"
 	"time"
 
 	"contract-analysis-service/configs"
@@ -27,10 +27,16 @@ func TestNewContainer(t *testing.T) {
 	defer func() { _ = pg.Terminate(ctx) }()
 
 	host, err := pg.Host(ctx)
-	if err != nil { t.Fatalf("get host: %v", err) }
+	if err != nil {
+		t.Fatalf("get host: %v", err)
+	}
 	port, err := pg.MappedPort(ctx, "5432/tcp")
-	if err != nil { t.Fatalf("get mapped port: %v", err) }
-	if host == "localhost" { host = "127.0.0.1" }
+	if err != nil {
+		t.Fatalf("get mapped port: %v", err)
+	}
+	if host == "localhost" {
+		host = "127.0.0.1"
+	}
 
 	// Wait until ready
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", "testuser", "testpassword", host, port.Int(), "testdb")
@@ -38,7 +44,10 @@ func TestNewContainer(t *testing.T) {
 	for time.Now().Before(deadline) {
 		db, openErr := sql.Open("postgres", dsn)
 		if openErr == nil {
-			if pingErr := db.Ping(); pingErr == nil { _ = db.Close(); break }
+			if pingErr := db.Ping(); pingErr == nil {
+				_ = db.Close()
+				break
+			}
 			_ = db.Close()
 		}
 		time.Sleep(300 * time.Millisecond)
@@ -50,7 +59,7 @@ func TestNewContainer(t *testing.T) {
 		Server:      configs.ServerConfig{Port: "8080"},
 		Database: configs.DatabaseConfig{
 			Dialect: "postgres",
-			Name:   fmt.Sprintf("host=%s port=%d user=testuser password=testpassword dbname=testdb sslmode=disable", host, port.Int()),
+			Name:    fmt.Sprintf("host=%s port=%d user=testuser password=testpassword dbname=testdb sslmode=disable", host, port.Int()),
 			LogMode: true,
 		},
 		Jaeger: configs.JaegerConfig{URL: "", SamplingRate: 1.0},
@@ -63,7 +72,11 @@ func TestNewContainer(t *testing.T) {
 	}
 
 	sqlDB, err := ctr.DB.DB()
-	if err != nil { t.Fatalf("get sql db: %v", err) }
+	if err != nil {
+		t.Fatalf("get sql db: %v", err)
+	}
 	defer sqlDB.Close()
-	if err := sqlDB.Ping(); err != nil { t.Fatalf("db ping failed: %v", err) }
+	if err := sqlDB.Ping(); err != nil {
+		t.Fatalf("db ping failed: %v", err)
+	}
 }

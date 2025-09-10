@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"contract-analysis-service/internal/service"
+	"github.com/gin-gonic/gin"
 )
 
 type KnowledgeHandler struct {
@@ -18,11 +18,11 @@ func NewKnowledgeHandler(svc service.KnowledgeService) *KnowledgeHandler {
 
 func (h *KnowledgeHandler) CreateKnowledge(c *gin.Context) {
 	var req struct {
-		Title    string   `json:"title"`
-		Content  string   `json:"content"`
-		Category string   `json:"category"`
-		Source   string   `json:"source"`
-		Tags     []string `json:"tags"`
+		Title    string         `json:"title"`
+		Content  string         `json:"content"`
+		Category string         `json:"category"`
+		Source   string         `json:"source"`
+		Tags     []string       `json:"tags"`
 		Metadata map[string]any `json:"metadata"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,10 +49,10 @@ func (h *KnowledgeHandler) GetKnowledge(c *gin.Context) {
 func (h *KnowledgeHandler) UpdateKnowledge(c *gin.Context) {
 	id := c.Param("id")
 	var req struct {
-		Title    string   `json:"title"`
-		Content  string   `json:"content"`
-		Category string   `json:"category"`
-		Tags     []string `json:"tags"`
+		Title    string         `json:"title"`
+		Content  string         `json:"content"`
+		Category string         `json:"category"`
+		Tags     []string       `json:"tags"`
 		Metadata map[string]any `json:"metadata"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {

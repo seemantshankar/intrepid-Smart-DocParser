@@ -43,7 +43,7 @@ func main() {
 
 	// Setup logger
 	logger, _ := zap.NewDevelopment()
-	defer logger.Sync()
+	defer func() { _ = logger.Sync() }()
 
 	// Check for PDF file argument
 	if len(os.Args) < 2 {
