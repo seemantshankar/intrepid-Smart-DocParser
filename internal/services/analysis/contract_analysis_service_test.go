@@ -54,6 +54,52 @@ func (m *MockKnowledgeRepository) ListKnowledge(ctx context.Context, limit, offs
 	return args.Get(0).([]*repository.KnowledgeEntry), args.Error(1)
 }
 
+// Add new methods to satisfy the updated interface
+func (m *MockKnowledgeRepository) UpdateKnowledgeWithConflictDetection(ctx context.Context, entry *repository.KnowledgeEntry) error {
+	args := m.Called(ctx, entry)
+	return args.Error(0)
+}
+
+func (m *MockKnowledgeRepository) SearchKnowledgeAdvanced(ctx context.Context, filter repository.KnowledgeSearchFilter) ([]*repository.KnowledgeEntry, error) {
+	args := m.Called(ctx, filter)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*repository.KnowledgeEntry), args.Error(1)
+}
+
+func (m *MockKnowledgeRepository) GetVersionHistory(ctx context.Context, entryID uuid.UUID) ([]*repository.KnowledgeEntry, error) {
+	args := m.Called(ctx, entryID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*repository.KnowledgeEntry), args.Error(1)
+}
+
+func (m *MockKnowledgeRepository) GetLatestVersion(ctx context.Context, entryID uuid.UUID) (*repository.KnowledgeEntry, error) {
+	args := m.Called(ctx, entryID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.KnowledgeEntry), args.Error(1)
+}
+
+func (m *MockKnowledgeRepository) FindSimilarContent(ctx context.Context, content string, threshold float64, limit int) ([]*repository.KnowledgeEntry, error) {
+	args := m.Called(ctx, content, threshold, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*repository.KnowledgeEntry), args.Error(1)
+}
+
+func (m *MockKnowledgeRepository) FullTextSearch(ctx context.Context, query string, limit, offset int) ([]*repository.KnowledgeEntry, error) {
+	args := m.Called(ctx, query, limit, offset)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*repository.KnowledgeEntry), args.Error(1)
+}
+
 func TestContractAnalysisService_AnalyzeContract(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	mockLLMService := &llm.MockLLMService{}

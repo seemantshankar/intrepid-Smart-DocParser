@@ -112,6 +112,7 @@ func SetupTestDatabase(t *testing.T) *TestDB {
 		&repository.Contract{},
 		&repository.Milestone{},
 		&repository.RiskAssessment{},
+		&repository.KnowledgeEntry{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
@@ -135,7 +136,7 @@ func (t *TestDB) CreateRepositories() Repositories {
 
 // Cleanup truncates all tables to ensure test isolation
 func (t *TestDB) Cleanup() {
-	tables := []string{"risk_assessments", "milestones", "contracts"}
+	tables := []string{"risk_assessments", "milestones", "contracts", "knowledge_entries"}
 	for _, table := range tables {
 		t.DB.Exec("TRUNCATE TABLE " + table + " CASCADE")
 	}
